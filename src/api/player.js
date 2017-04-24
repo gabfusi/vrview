@@ -224,7 +224,7 @@ Player.prototype.getDirName_ = function() {
  * Make all of the URLs inside contentInfo absolute instead of relative.
  */
 Player.prototype.absolutifyPaths_ = function(contentInfo) {
-  var dirName = this.getDirName_();
+  var dirName = contentInfo.assetsUrl || this.getDirName_();
   var urlParams = ['image', 'preview', 'video'];
 
   for (var i = 0; i < urlParams.length; i++) {
