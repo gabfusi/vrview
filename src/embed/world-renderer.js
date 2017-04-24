@@ -18,6 +18,7 @@ var Eyes = require('./eyes');
 var HotspotRenderer = require('./hotspot-renderer');
 var ReticleRenderer = require('./reticle-renderer');
 var SphereRenderer = require('./sphere-renderer');
+var EditorRenderer = require('./editor-renderer');
 var TWEEN = require('tween.js');
 var Util = require('../util');
 var VideoProxy = require('./video-proxy');
@@ -43,11 +44,12 @@ var AUTOPAN_ANGLE = 0.4;
 function WorldRenderer() {
   this.init_();
 
-  this.sphereRenderer = new SphereRenderer(this.scene);
+  this.sphereRenderer = new SphereRenderer(this.scene, this);
   this.hotspotRenderer = new HotspotRenderer(this);
   this.hotspotRenderer.on('focus', this.onHotspotFocus_.bind(this));
   this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
   this.reticleRenderer = new ReticleRenderer(this.camera);
+  this.editorRenderer = new EditorRenderer(this);
 
   // Get the VR Display as soon as we initialize.
   navigator.getVRDisplays().then(function(displays) {
@@ -60,10 +62,15 @@ function WorldRenderer() {
 WorldRenderer.prototype = new EventEmitter();
 
 WorldRenderer.prototype.render = function(time) {
-  this.controls.update();
-  this.hotspotRenderer.update(this.camera);
-  TWEEN.update(time);
-  this.effect.render(this.scene, this.camera);
+    var panActive = !this.editorRenderer.isDrawing();
+    if(panActive) {
+        this.controls.update();
+    }
+
+    this.hotspotRenderer.update(this.camera);
+    TWEEN.update(time);
+    this.effect.render(this.scene, this.camera);
+    this.dispose();
 };
 
 /**
@@ -82,7 +89,7 @@ WorldRenderer.prototype.setScene = function(scene) {
   }
 
   var params = {
-    isStereo: scene.isStereo,
+    isStereo: scene.isStereo
   };
   this.setDefaultYaw_(scene.defaultYaw || 0);
 
@@ -168,6 +175,17 @@ WorldRenderer.prototype.submitFrame = function() {
     this.vrDisplay.submitFrame();
   }
 };
+
+WorldRenderer.prototype.dispose = function() {
+    var eyeLeft = this.scene.getObjectByName('eyeLeft'),
+        eyeRight = this.scene.getObjectByName('eyeRight');
+    if(!eyeLeft || !eyeRight) return
+    if(eyeLeft.material.map ) eyeLeft.material.map.dispose();
+    eyeLeft.geometry.dispose();
+
+    if(eyeRight.material.map ) eyeRight.material.map.dispose();
+    eyeRight.geometry.dispose();
+}
 
 WorldRenderer.prototype.destroy = function() {
   if (this.player) {

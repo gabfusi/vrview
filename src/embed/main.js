@@ -36,6 +36,12 @@ receiver.on(Message.PAUSE, onPauseRequest);
 receiver.on(Message.ADD_HOTSPOT, onAddHotspot);
 receiver.on(Message.SET_CONTENT, onSetContent);
 receiver.on(Message.SET_VOLUME, onSetVolume);
+receiver.on(Message.GET_POSITION, onGetPosition);
+receiver.on(Message.START_DRAW, onStartDraw);
+receiver.on(Message.END_DRAW, onEndDraw);
+receiver.on(Message.ADD_SHAPE, onAddShape);
+receiver.on(Message.EDIT_SHAPE, onEditShape);
+receiver.on(Message.REMOVE_SHAPE, onRemoveShape);
 
 window.addEventListener('load', onLoad);
 
@@ -46,6 +52,10 @@ worldRenderer.on('error', onRenderError);
 worldRenderer.on('load', onRenderLoad);
 worldRenderer.on('modechange', onModeChange);
 worldRenderer.hotspotRenderer.on('click', onHotspotClick);
+worldRenderer.editorRenderer.on('drawn', onEditorShapeDrawn);
+worldRenderer.editorRenderer.on('transformed', onEditorShapeTransformed);
+worldRenderer.editorRenderer.on('shapeselected', onEditorShapeSelected);
+worldRenderer.editorRenderer.on('shapeunselected', onEditorShapeUnselected);
 
 window.worldRenderer = worldRenderer;
 
@@ -142,8 +152,9 @@ function onAddHotspot(e) {
   var yaw = parseFloat(e.yaw);
   var radius = parseFloat(e.radius);
   var distance = parseFloat(e.distance);
+  var customShape = e.custom;
   var id = e.id;
-  worldRenderer.hotspotRenderer.add(pitch, yaw, radius, distance, id);
+  worldRenderer.hotspotRenderer.add(pitch, yaw, radius, distance, id, customShape);
 }
 
 function onSetContent(e) {
@@ -278,4 +289,80 @@ function loop(time) {
   worldRenderer.render(time);
   worldRenderer.submitFrame();
   stats.end();
+}
+
+function onGetPosition() {
+    Util.sendParentMessage({
+        type: Message.GET_POSITION,
+        data: {
+            Yaw: worldRenderer.camera.rotation.y * 180 / Math.PI,
+            Pitch: worldRenderer.camera.rotation.x * 180 / Math.PI
+        }
+    });
+}
+
+function onStartDraw() {
+    // activate draw tool
+    worldRenderer.editorRenderer.startDraw();
+}
+function onEndDraw() {
+    // deactivate draw tool
+    worldRenderer.editorRenderer.endDraw();
+}
+function onEditorShapeDrawn(shape) {
+    // on shape drawn
+    Util.sendParentMessage({
+        type: Message.END_DRAW,
+        data: {
+            id: shape.id,
+            vertices: shape.children.filter(function(el){ return el.name === 'handle'; }).map(function(el) { return el.position; })
+        }
+    });
+}
+function onEditorShapeTransformed(shape) {
+    // on shape drawn
+    Util.sendParentMessage({
+        type: Message.SHAPE_TRANSFORMED,
+        data: {
+            id: shape.id,
+            vertices: shape.children.filter(function(el){ return el.name === 'handle'; }).map(function(el) { return el.position; })
+        }
+    });
+}
+
+
+function onEditorShapeSelected(shape) {
+    // on shape selected
+    Util.sendParentMessage({
+        type: Message.SHAPE_SELECTED,
+        data: {
+            id: shape.id
+        }
+    });
+}
+
+function onEditorShapeUnselected() {
+    // on shape selected
+    Util.sendParentMessage({
+        type: Message.SHAPE_UNSELECTED,
+        data: false
+    });
+}
+
+function onAddShape(data) {
+    // on external shape add
+
+    var vertices = data.params.vertices;
+
+    if(vertices.length && !(vertices[0] instanceof THREE.Vector3)) {
+        vertices = vertices.map(function(p) { return new THREE.Vector3(p.x, p.y, p.z); })
+    }
+
+    worldRenderer.editorRenderer.createShape(vertices, data.id);
+}
+function onEditShape(data) {
+    worldRenderer.editorRenderer.editShape(data.id, data.params);
+}
+function onRemoveShape(data) {
+    worldRenderer.editorRenderer.removeShape(data.id);
 }

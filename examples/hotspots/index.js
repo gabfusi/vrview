@@ -91,12 +91,22 @@ var scenes = {
   walrus: {
     image: 'walrus.jpg',
     preview: 'walrus-preview.jpg',
+      isDebug:true,
     hotspots: {
       whaleLeft: {
         pitch: 0,
-        yaw: 20,
-        radius: 0.05,
-        distance: 1
+        yaw: 0,
+        radius: 0.5,
+        distance: 1,
+          custom: [{
+              x: -0.13, y: -0.08
+          },{
+              x: -0.13, y: 0.07
+          },{
+              x: 0.04, y: 0.06
+          },{
+              x: 0.04, y: -0.07
+          }]
       },
       whaleRight: {
         pitch: 0,
@@ -126,6 +136,27 @@ function onLoad() {
   vrView.on('modechange', onModeChange);
   vrView.on('click', onHotspotClick);
   vrView.on('error', onVRViewError);
+    vrView.on('getposition', onGetPosition);
+    vrView.on('enddraw', onShapeDrawn);
+    vrView.on('shapetransformed', onShapeTransformed);
+    vrView.on('shapeselected', onShapeSelected);
+    vrView.on('shapeunselected', onShapeUnselected);
+
+    document.getElementById('activateTool').addEventListener('click', function() {
+        vrView.activateShapeTool();
+    });
+
+    document.getElementById('deactivateTool').addEventListener('click', function() {
+        vrView.deactivateShapeTool();
+    });
+
+    document.getElementById('addShape').addEventListener('click', function() {
+
+        vrView.addShape(37, {
+            vertices: [{"x":-0.6494294324965203,"y":0.23421261198200685,"z":0.7200792805745425},{"x":-0.7541588674358198,"y":0.23436800185747322,"z":0.6105142454262472},{"x":-0.6922991620677248,"y":0.4515368344437288,"z":0.5604369567065645},{"x":-0.5986122602617642,"y":0.4478480375011406,"z":0.6614371749391494}]
+        });
+    });
+
 }
 
 function onVRViewReady(e) {
@@ -138,10 +169,24 @@ function onModeChange(e) {
 }
 
 function onHotspotClick(e) {
-  console.log('onHotspotClick', e.id);
   if (e.id) {
-    loadScene(e.id);
+      console.log('onHotspotClick', e.id, e);
+    //loadScene(e.id);
   }
+}
+
+function onShapeDrawn(e) {
+    console.log('Shape drawn', e);
+    console.log(JSON.stringify(e.vertices));
+}
+function onShapeTransformed(e) {
+    console.log('Shape transformed', e);
+}
+function onShapeSelected(e) {
+    console.log('Shape selected', e);
+}
+function onShapeUnselected(e) {
+    console.log('Shape unselected', e);
 }
 
 function loadScene(id) {
@@ -166,13 +211,21 @@ function loadScene(id) {
       pitch: hotspot.pitch,
       yaw: hotspot.yaw,
       radius: hotspot.radius,
-      distance: hotspot.distance
+      distance: hotspot.distance,
+      custom: hotspot.custom || null
     });
   }
+
+    // get Center position
+    vrView.getPosition();
 }
 
 function onVRViewError(e) {
   console.log('Error! %s', e.message);
+}
+
+function onGetPosition(e) {
+   console.log(e)
 }
 
 window.addEventListener('load', onLoad);

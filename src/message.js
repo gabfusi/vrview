@@ -23,6 +23,15 @@ var Message = {
   SET_CONTENT: 'setimage',
   SET_VOLUME: 'setvolume',
   DEVICE_MOTION: 'devicemotion',
+    GET_POSITION: 'getposition',
+    START_DRAW: 'startdraw',
+    END_DRAW: 'enddraw',
+    ADD_SHAPE: 'addshape',
+    EDIT_SHAPE: 'editshape',
+    REMOVE_SHAPE: 'removeshape',
+    SHAPE_TRANSFORMED: 'shapetransformed',
+    SHAPE_SELECTED: 'shapeselected',
+    SHAPE_UNSELECTED: 'shapeunselected'
 };
 
 module.exports = Message;

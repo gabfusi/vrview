@@ -91,24 +91,56 @@ HotspotRenderer.prototype = new EventEmitter();
  * in meters.
  * @param hotspotId {String} The ID of the hotspot.
  */
-HotspotRenderer.prototype.add = function(pitch, yaw, radius, distance, id) {
+HotspotRenderer.prototype.add = function(pitch, yaw, radius, distance, id, customShape) {
   // If a hotspot already exists with this ID, stop.
   if (this.hotspots[id]) {
     // TODO: Proper error reporting.
     console.error('Attempt to add hotspot with existing id %s.', id);
     return;
   }
-  var hotspot = this.createHotspot_(radius, distance);
-  hotspot.name = id;
 
-  // Position the hotspot based on the pitch and yaw specified.
-  var quat = new THREE.Quaternion();
-  quat.setFromEuler(new THREE.Euler(THREE.Math.degToRad(pitch), THREE.Math.degToRad(yaw), 0));
-  hotspot.position.applyQuaternion(quat);
-  hotspot.lookAt(new THREE.Vector3());
-  
-  this.hotspotRoot.add(hotspot);
-  this.hotspots[id] = hotspot;
+  var hotspot;
+  if(customShape) {
+
+      hotspot = this.createCustomHotspot_(customShape, distance);
+      hotspot.name = id;
+
+      // Position the hotspot based on the pitch and yaw specified.
+      //var quat = new THREE.Quaternion();
+      //quat.setFromEuler(new THREE.Euler(THREE.Math.degToRad(pitch), THREE.Math.degToRad(yaw), 0));
+      //hotspot.position.applyQuaternion(quat);
+      //hotspot.lookAt(new THREE.Vector3());
+
+      var r = 1;
+      var theta = 2 * Math.PI * yaw;
+      var phi = Math.PI * pitch;
+
+      var _x = Math.cos(theta) * Math.sin(phi) * r;
+      var _y = Math.sin(theta) * Math.sin(phi) * r;
+      var _z = -Math.cos(phi) * r;
+
+      hotspot.position.z = _z;
+      hotspot.position.x = _x;
+      hotspot.position.y = _y;
+      hotspot.lookAt(new THREE.Vector3());
+
+      this.hotspotRoot.add(hotspot);
+      this.hotspots[id] = hotspot;
+
+  } else {
+      hotspot = this.createHotspot_(radius, distance);
+      hotspot.name = id;
+
+      // Position the hotspot based on the pitch and yaw specified.
+      var quat = new THREE.Quaternion();
+      quat.setFromEuler(new THREE.Euler(THREE.Math.degToRad(pitch), THREE.Math.degToRad(yaw), 0));
+      hotspot.position.applyQuaternion(quat);
+      hotspot.lookAt(new THREE.Vector3());
+
+      this.hotspotRoot.add(hotspot);
+      this.hotspots[id] = hotspot;
+  }
+
 }
 
 /**
@@ -256,14 +288,14 @@ HotspotRenderer.prototype.onMouseUp_ = function(e) {
 
   // If no hotspots are pressed, emit an empty click event.
   if (Util.isEmptyObject(this.downHotspots)) {
-    this.emit('click');
+    this.emit('click', null, this.pointer.x, this.pointer.y);
     return;
   }
 
   // Only emit a click if the mouse was down on the same hotspot before.
   for (var id in this.selectedHotspots) {
     if (id in this.downHotspots) {
-      this.emit('click', id);
+      this.emit('click', id, this.pointer.x, this.pointer.y);
       this.up_(id);
     }
   }
@@ -308,6 +340,51 @@ HotspotRenderer.prototype.createHotspot_ = function(radius, distance) {
   hotspot.add(outer);
 
   return hotspot;
+};
+
+HotspotRenderer.prototype.createCustomHotspot_ = function(points, distance) {
+    if(points.length < 3) {
+        return false;
+    }
+
+    // shape
+    var shapeBounds = new THREE.Shape();
+    shapeBounds.moveTo(points[0].x, points[0].y); // start point
+    for (var i = 1; i < points.length; i++) {
+        shapeBounds.lineTo(points[i].x, points[i].y); // line to next point
+    }
+
+    // inner shape
+    var innerGeometry = new THREE.ShapeGeometry(shapeBounds);
+    var innerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff, side: THREE.DoubleSide, transparent: true,
+        opacity: MAX_INNER_OPACITY, depthTest: false
+    });
+
+    var inner = new THREE.Mesh(innerGeometry, innerMaterial);
+    inner.name = 'inner';
+
+    // outer shape
+    var outerGeometry = shapeBounds.createPointsGeometry();
+    var outerMaterial = new THREE.LineBasicMaterial( {
+        color: 0xffffff, side: THREE.DoubleSide, transparent: true,
+        opacity: MAX_OUTER_OPACITY, depthTest: false
+    });
+
+    var outer = new THREE.Line( outerGeometry, outerMaterial );
+    outer.name = 'outer';
+
+    // Position at the extreme end of the sphere.
+    var hotspot = new THREE.Object3D();
+    hotspot.position.z = -distance;
+    hotspot.scale.set(NORMAL_SCALE);
+
+    hotspot.add(inner);
+    hotspot.add(outer);
+
+    console.log('CircleHotspot', hotspot);
+
+    return hotspot;
 };
 
 /**

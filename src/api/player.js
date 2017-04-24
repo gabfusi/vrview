@@ -70,6 +70,7 @@ Player.prototype.addHotspot = function(hotspotId, params) {
     yaw: params.yaw,
     radius: params.radius,
     distance: params.distance,
+    custom: params.custom || null,
     id: hotspotId
   };
   this.sender.send({type: Message.ADD_HOTSPOT, data: data});
@@ -144,6 +145,12 @@ Player.prototype.onMessage_ = function(event) {
     case 'modechange':
     case 'error':
     case 'click':
+      case 'getposition':
+      case 'startdraw':
+      case 'enddraw':
+      case 'shapetransformed':
+      case 'shapeselected':
+      case 'shapeunselected':
       this.emit(type, data);
       break;
     case 'paused':
@@ -231,5 +238,27 @@ Player.prototype.absolutifyPaths_ = function(contentInfo) {
   }
 };
 
+Player.prototype.getPosition = function() {
+    this.sender.send({type: Message.GET_POSITION, data: {}});
+};
+
+Player.prototype.activateShapeTool = function() {
+    this.sender.send({type: Message.START_DRAW, data: {}});
+};
+Player.prototype.deactivateShapeTool = function() {
+    this.sender.send({type: Message.END_DRAW, data: {}});
+};
+
+Player.prototype.addShape = function(shapeId, params) {
+    this.sender.send({type: Message.ADD_SHAPE, data: { id: shapeId, params: params }});
+};
+
+Player.prototype.editShape = function(shapeId, params) {
+    this.sender.send({type: Message.EDIT_SHAPE, data: { id: shapeId, params: params }});
+};
+
+Player.prototype.removeShape = function(shapeId) {
+    this.sender.send({type: Message.REMOVE_SHAPE, data: { id: shapeId }});
+};
 
 module.exports = Player;

@@ -1,5 +1,14 @@
 import '../../../node_modules/three/src/polyfills.js';
 
+export { ShapeGeometry } from '../../../node_modules/three/src/geometries/ShapeGeometry.js';
+export { Shape } from '../../../node_modules/three/src/extras/core/Shape.js';
+export { ShapeUtils } from '../../../node_modules/three/src/extras/ShapeUtils';
+export { Line } from '../../../node_modules/three/src/objects/Line.js';
+export { LineBasicMaterial } from '../../../node_modules/three/src/materials/LineBasicMaterial.js';
+export { Geometry } from '../../../node_modules/three/src/core/Geometry.js';
+export { Face3 } from '../../../node_modules/three/src/core/Face3.js';
+
+
 export { WebGLRenderer } from '../../../node_modules/three/src/renderers/WebGLRenderer.js';
 export { Scene } from '../../../node_modules/three/src/scenes/Scene.js';
 export { Mesh } from '../../../node_modules/three/src/objects/Mesh.js';
