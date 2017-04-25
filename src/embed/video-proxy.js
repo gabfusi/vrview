@@ -24,76 +24,106 @@ var Util = require('../util');
  * can remove this code.
  */
 function VideoProxy(videoElement) {
-  this.videoElement = videoElement;
-  // True if we're currently manually advancing the playhead (only on iOS).
-  this.isFakePlayback = false;
+    this.videoElement = videoElement;
+    // True if we're currently manually advancing the playhead (only on iOS).
+    this.isFakePlayback = false;
 
-  // When the video started playing.
-  this.startTime = null;
+    // When the video started playing.
+    this.startTime = null;
 }
 
-VideoProxy.prototype.play = function() {
-  if (Util.isIOS9OrLess()) {
-    this.startTime = performance.now();
-    this.isFakePlayback = true;
+VideoProxy.prototype.play = function () {
+    if (Util.isIOS9OrLess()) {
+        this.startTime = performance.now();
+        this.isFakePlayback = true;
 
-    // Make an audio element to playback just the audio part.
-    this.audioElement = new Audio();
-    this.audioElement.src = this.videoElement.src;
-    this.audioElement.play();
-  } else {
-    this.videoElement.play().then(function(e) {
-      console.log('Playing video.', e);
-    });
-  }
-};
-
-VideoProxy.prototype.pause = function() {
-  if (Util.isIOS9OrLess() && this.isFakePlayback) {
-    this.isFakePlayback = true;
-
-    this.audioElement.pause();
-  } else {
-    this.videoElement.pause();
-  }
-};
-
-VideoProxy.prototype.setVolume = function(volumeLevel) {
-  if (this.videoElement) {
-    // On iOS 10, the VideoElement.volume property is read-only. So we special
-    // case muting and unmuting.
-    if (Util.isIOS()) {
-      this.videoElement.muted = (volumeLevel === 0);
+        // Make an audio element to playback just the audio part.
+        this.audioElement = new Audio();
+        this.audioElement.src = this.videoElement.src;
+        this.audioElement.play();
     } else {
-      this.videoElement.volume = volumeLevel;
+        this.videoElement.play().then(function (e) {
+            console.log('Playing video.', e);
+        });
     }
-  }
-  if (this.audioElement) {
-    this.audioElement.volume = volumeLevel;
-  }
+};
+
+VideoProxy.prototype.pause = function () {
+    if (Util.isIOS9OrLess() && this.isFakePlayback) {
+        this.isFakePlayback = true;
+
+        this.audioElement.pause();
+    } else {
+        this.videoElement.pause();
+    }
+};
+
+VideoProxy.prototype.seek = function (frame) {
+    if (Util.isIOS9OrLess() && this.isFakePlayback) {
+        this.isFakePlayback = true;
+
+        this.audioElement.seek(frame);
+    } else {
+        this.videoElement.seek(frame);
+    }
+};
+
+VideoProxy.prototype.setVolume = function (volumeLevel) {
+    if (this.videoElement) {
+        // On iOS 10, the VideoElement.volume property is read-only. So we special
+        // case muting and unmuting.
+        if (Util.isIOS()) {
+            this.videoElement.muted = (volumeLevel === 0);
+        } else {
+            this.videoElement.volume = volumeLevel;
+        }
+    }
+    if (this.audioElement) {
+        this.audioElement.volume = volumeLevel;
+    }
+};
+
+VideoProxy.prototype.getCurrentTime = function () {
+    return {
+        currentTime: Util.isIOS9OrLess() ? this.audioElement.currentTime : this.videoElement.currentTime,
+        duration: Util.isIOS9OrLess() ? this.audioElement.duration : this.videoElement.duration
+    }
+};
+
+/**
+ + *
+ + * @param {Object} time
+ + */
+VideoProxy.prototype.setCurrentTime = function (time) {
+    if (this.videoElement) {
+        this.videoElement.currentTime = time.currentTime;
+    }
+    if (this.audioElement) {
+        this.audioElement.currentTime = time.currentTime;
+    }
 };
 
 /**
  * Called on RAF to progress playback.
  */
-VideoProxy.prototype.update = function() {
-  // Fakes playback for iOS only.
-  if (!this.isFakePlayback) {
-    return;
-  }
-  var duration = this.videoElement.duration;
-  var now = performance.now();
-  var delta = now - this.startTime;
-  var deltaS = delta / 1000;
-  this.videoElement.currentTime = deltaS;
+VideoProxy.prototype.update = function () {
+    // Fakes playback for iOS only.
+    if (!this.isFakePlayback) {
+        return;
+    }
+    var duration = this.videoElement.duration;
+    var now = performance.now();
+    var delta = now - this.startTime;
+    var deltaS = delta / 1000;
+    this.videoElement.currentTime = deltaS;
 
-  // Loop through the video
-  if (deltaS > duration) {
-    this.startTime = now;
-    this.videoElement.currentTime = 0;
-    // Also restart the audio.
-    this.audioElement.currentTime = 0;
-  }
+    // Loop through the video
+    if (deltaS > duration) {
+        this.startTime = now;
+        this.videoElement.currentTime = 0;
+        // Also restart the audio.
+        this.audioElement.currentTime = 0;
+    }
 };
 
 module.exports = VideoProxy;

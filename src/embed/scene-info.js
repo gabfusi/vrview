@@ -14,99 +14,103 @@
  */
 
 var CAMEL_TO_UNDERSCORE = {
-  video: 'video',
-  image: 'image',
-  preview: 'preview',
-  isStereo: 'is_stereo',
-  defaultYaw: 'default_yaw',
-  isYawOnly: 'is_yaw_only',
-  isDebug: 'is_debug',
-  isVROff: 'is_vr_off',
-  isAutopanOff: 'is_autopan_off',
+    video: 'video',
+    image: 'image',
+    preview: 'preview',
+    loop: 'loop',
+    autoplay: 'autoplay',
+    isStereo: 'is_stereo',
+    defaultYaw: 'default_yaw',
+    isYawOnly: 'is_yaw_only',
+    isDebug: 'is_debug',
+    isVROff: 'is_vr_off',
+    isAutopanOff: 'is_autopan_off',
 };
 
 /**
  * Contains all information about a given scene.
  */
 function SceneInfo(opt_params) {
-  var params = opt_params || {};
+    var params = opt_params || {};
 
-  this.image = params.image;
-  this.preview = params.preview;
-  this.video = params.video;
-  this.defaultYaw = THREE.Math.degToRad(params.defaultYaw || 0);
+    this.image = params.image;
+    this.preview = params.preview;
+    this.video = params.video;
+    this.defaultYaw = THREE.Math.degToRad(params.defaultYaw || 0);
 
-  this.isStereo = Util.parseBoolean(params.isStereo);
-  this.isYawOnly = Util.parseBoolean(params.isYawOnly);
-  this.isDebug = Util.parseBoolean(params.isDebug);
-  this.isVROff = Util.parseBoolean(params.isVROff);
-  this.isAutopanOff = Util.parseBoolean(params.isAutopanOff);
+    this.isStereo = Util.parseBoolean(params.isStereo);
+    this.isYawOnly = Util.parseBoolean(params.isYawOnly);
+    this.isDebug = Util.parseBoolean(params.isDebug);
+    this.isVROff = Util.parseBoolean(params.isVROff);
+    this.isAutopanOff = Util.parseBoolean(params.isAutopanOff);
+    this.loop = Util.parseBoolean(params.loop);
+    this.autoplay = Util.parseBoolean(params.autoplay);
 }
 
-SceneInfo.loadFromGetParams = function() {
-  var params = {};
-  for (var camelCase in CAMEL_TO_UNDERSCORE) {
-    var underscore = CAMEL_TO_UNDERSCORE[camelCase];
-    params[camelCase] = Util.getQueryParameter(underscore);
-  }
-  var scene = new SceneInfo(params);
-  if (!scene.isValid()) {
-    console.warn('Invalid scene: %s', scene.errorMessage);
-  }
-  return scene;
-};
-
-SceneInfo.loadFromAPIParams = function(underscoreParams) {
-  var params = {};
-  for (var camelCase in CAMEL_TO_UNDERSCORE) {
-    var underscore = CAMEL_TO_UNDERSCORE[camelCase];
-    if (underscoreParams[underscore]) {
-      params[camelCase] = underscoreParams[underscore];
+SceneInfo.loadFromGetParams = function () {
+    var params = {};
+    for (var camelCase in CAMEL_TO_UNDERSCORE) {
+        var underscore = CAMEL_TO_UNDERSCORE[camelCase];
+        params[camelCase] = Util.getQueryParameter(underscore);
     }
-  }
-  var scene = new SceneInfo(params);
-  if (!scene.isValid()) {
-    console.warn('Invalid scene: %s', scene.errorMessage);
-  }
-  return scene;
+    var scene = new SceneInfo(params);
+    if (!scene.isValid()) {
+        console.warn('Invalid scene: %s', scene.errorMessage);
+    }
+    return scene;
 };
 
-SceneInfo.prototype.isValid = function() {
-  // Either it's an image or a video.
-  if (!this.image && !this.video) {
-    this.errorMessage = 'Either image or video URL must be specified.';
-    return false;
-  }
-  if (this.image && this.video) {
-    this.errorMessage = 'Both image and video URL can\'t be specified.';
-    return false;
-  }
-  if (this.image && !this.isValidImage_(this.image)) {
-    this.errorMessage = 'Invalid image URL: ' + this.image;
-    return false;
-  }
-  this.errorMessage = null;
-  return true;
+SceneInfo.loadFromAPIParams = function (underscoreParams) {
+    var params = {};
+    for (var camelCase in CAMEL_TO_UNDERSCORE) {
+        var underscore = CAMEL_TO_UNDERSCORE[camelCase];
+        if (underscoreParams[underscore]) {
+            params[camelCase] = underscoreParams[underscore];
+        }
+    }
+    var scene = new SceneInfo(params);
+    if (!scene.isValid()) {
+        console.warn('Invalid scene: %s', scene.errorMessage);
+    }
+    return scene;
+};
+
+SceneInfo.prototype.isValid = function () {
+    // Either it's an image or a video.
+    if (!this.image && !this.video) {
+        this.errorMessage = 'Either image or video URL must be specified.';
+        return false;
+    }
+    if (this.image && this.video) {
+        this.errorMessage = 'Both image and video URL can\'t be specified.';
+        return false;
+    }
+    if (this.image && !this.isValidImage_(this.image)) {
+        this.errorMessage = 'Invalid image URL: ' + this.image;
+        return false;
+    }
+    this.errorMessage = null;
+    return true;
 };
 
 /**
  * Generates a URL to reflect this scene.
  */
-SceneInfo.prototype.getCurrentUrl = function() {
-  var url = location.protocol + '//' + location.host + location.pathname + '?';
-  for (var camelCase in CAMEL_TO_UNDERSCORE) {
-    var underscore = CAMEL_TO_UNDERSCORE[camelCase];
-    var value = this[camelCase];
-    if (value !== undefined) {
-      url += underscore + '=' + value + '&';
+SceneInfo.prototype.getCurrentUrl = function () {
+    var url = location.protocol + '//' + location.host + location.pathname + '?';
+    for (var camelCase in CAMEL_TO_UNDERSCORE) {
+        var underscore = CAMEL_TO_UNDERSCORE[camelCase];
+        var value = this[camelCase];
+        if (value !== undefined) {
+            url += underscore + '=' + value + '&';
+        }
     }
-  }
-  // Chop off the trailing ampersand.
-  return url.substring(0, url.length - 1);
+    // Chop off the trailing ampersand.
+    return url.substring(0, url.length - 1);
 };
 
-SceneInfo.prototype.isValidImage_ = function(imageUrl) {
-  return true;
+SceneInfo.prototype.isValidImage_ = function (imageUrl) {
+    return true;
 };
 
 module.exports = SceneInfo;

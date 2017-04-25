@@ -58,6 +58,8 @@ IFrameMessageReceiver.prototype.onMessage_ = function(event) {
       case Message.ADD_SHAPE:
       case Message.EDIT_SHAPE:
       case Message.REMOVE_SHAPE:
+      case Message.SET_CURRENT_TIME:
+      case Message.SEEK:
       this.emit(type, data);
       break;
     default:

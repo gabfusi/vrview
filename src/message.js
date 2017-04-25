@@ -17,12 +17,16 @@
  * Messages from the API to the embed.
  */
 var Message = {
-  PLAY: 'play',
-  PAUSE: 'pause',
-  ADD_HOTSPOT: 'addhotspot',
-  SET_CONTENT: 'setimage',
-  SET_VOLUME: 'setvolume',
-  DEVICE_MOTION: 'devicemotion',
+    PLAY: 'play',
+    PAUSE: 'pause',
+    ADD_HOTSPOT: 'addhotspot',
+    SET_CONTENT: 'setimage',
+    SET_VOLUME: 'setvolume',
+    SET_AUTOPLAY: 'setautoplay',
+    TIMEUPDATE: 'timeupdate',
+    SET_CURRENT_TIME: 'setcurrenttime',
+    SEEK: 'seek',
+    DEVICE_MOTION: 'devicemotion',
     GET_POSITION: 'getposition',
     START_DRAW: 'startdraw',
     END_DRAW: 'enddraw',

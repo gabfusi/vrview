@@ -42,6 +42,7 @@ receiver.on(Message.END_DRAW, onEndDraw);
 receiver.on(Message.ADD_SHAPE, onAddShape);
 receiver.on(Message.EDIT_SHAPE, onEditShape);
 receiver.on(Message.REMOVE_SHAPE, onRemoveShape);
+receiver.on(Message.SET_CURRENT_TIME, onUpdateTime);
 
 window.addEventListener('load', onLoad);
 
@@ -56,239 +57,280 @@ worldRenderer.editorRenderer.on('drawn', onEditorShapeDrawn);
 worldRenderer.editorRenderer.on('transformed', onEditorShapeTransformed);
 worldRenderer.editorRenderer.on('shapeselected', onEditorShapeSelected);
 worldRenderer.editorRenderer.on('shapeunselected', onEditorShapeUnselected);
+worldRenderer.on('ended', onEnded);
+worldRenderer.on('play', onPlay);
 
 window.worldRenderer = worldRenderer;
 
 var isReadySent = false;
+var volume = 0;
 
 function onLoad() {
-  if (!Util.isWebGLEnabled()) {
-    showError('WebGL not supported.');
-    return;
-  }
+    if (!Util.isWebGLEnabled()) {
+        showError('WebGL not supported.');
+        return;
+    }
 
-  // Load the scene.
-  var scene = SceneInfo.loadFromGetParams();
-  worldRenderer.setScene(scene);
+    // Load the scene.
+    var scene = SceneInfo.loadFromGetParams();
+    worldRenderer.setScene(scene);
 
-  if (scene.isDebug) {
-    // Show stats.
-    showStats();
-  }
+    if (scene.isDebug) {
+        // Show stats.
+        showStats();
+    }
 
-  if (scene.isYawOnly) {
-    WebVRConfig = window.WebVRConfig || {};
-    WebVRConfig.YAW_ONLY = true;
-  }
+    if (scene.isYawOnly) {
+        WebVRConfig = window.WebVRConfig || {};
+        WebVRConfig.YAW_ONLY = true;
+    }
 
-  requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
 }
 
 
 function onVideoTap() {
-  worldRenderer.videoProxy.play();
-  hidePlayButton();
+    worldRenderer.videoProxy.play();
+    hidePlayButton();
 
-  // Prevent multiple play() calls on the video element.
-  document.body.removeEventListener('touchend', onVideoTap);
+    // Prevent multiple play() calls on the video element.
+    document.body.removeEventListener('touchend', onVideoTap);
 }
 
 function onRenderLoad(event) {
-  if (event.videoElement) {
-    // On mobile, tell the user they need to tap to start. Otherwise, autoplay.
-    if (Util.isMobile()) {
-      // Tell user to tap to start.
-      showPlayButton();
-      document.body.addEventListener('touchend', onVideoTap);
-    } else {
-      event.videoElement.play();
+    if (event.videoElement) {
+        var scene = SceneInfo.loadFromGetParams();
+        // On mobile, tell the user they need to tap to start. Otherwise, autoplay.
+        if (Util.isMobile()) {
+            // Tell user to tap to start.
+            showPlayButton();
+            document.body.addEventListener('touchend', onVideoTap);
+        } else if(scene.autoplay) {
+            event.videoElement.play();
+        } else if(!scene.autoplay) {
+            onPause();
+        }
+
+        // Attach to pause and play events, to notify the API.
+        event.videoElement.addEventListener('pause', onPause);
+        event.videoElement.addEventListener('play', onPlay);
+        event.videoElement.addEventListener('timeupdate', onGetCurrentTime);
+        event.videoElement.addEventListener('ended', onEnded);
+    }
+    // Hide loading indicator.
+    loadIndicator.hide();
+
+    // Autopan only on desktop, for photos only, and only if autopan is enabled.
+    if (!Util.isMobile() && !worldRenderer.sceneInfo.video && !worldRenderer.sceneInfo.isAutopanOff) {
+        worldRenderer.autopan();
     }
 
-    // Attach to pause and play events, to notify the API.
-    event.videoElement.addEventListener('pause', onPause);
-    event.videoElement.addEventListener('play', onPlay);
-  }
-  // Hide loading indicator.
-  loadIndicator.hide();
-
-  // Autopan only on desktop, for photos only, and only if autopan is enabled.
-  if (!Util.isMobile() && !worldRenderer.sceneInfo.video &&
-      !worldRenderer.sceneInfo.isAutopanOff) {
-    worldRenderer.autopan();
-  }
-
-  // Notify the API that we are ready, but only do this once.
-  if (!isReadySent) {
-    Util.sendParentMessage({
-      type: 'ready'
-    });
-    isReadySent = true;
-  }
+    // Notify the API that we are ready, but only do this once.
+    if (!isReadySent) {
+        Util.sendParentMessage({
+            type: 'ready',
+            data: {
+                duration: worldRenderer.sceneInfo.video ? event.videoElement.duration : 0
+            }
+        });
+        isReadySent = true;
+    }
 }
 
 function onPlayRequest() {
-  if (!worldRenderer.videoProxy) {
-    onApiError('Attempt to pause, but no video found.');
-    return;
-  }
-  worldRenderer.videoProxy.play();
+    if (!worldRenderer.videoProxy) {
+        onApiError('Attempt to pause, but no video found.');
+        return;
+    }
+    worldRenderer.videoProxy.play();
 }
 
 function onPauseRequest() {
-  if (!worldRenderer.videoProxy) {
-    onApiError('Attempt to pause, but no video found.');
-    return;
-  }
-  worldRenderer.videoProxy.pause();
+    if (!worldRenderer.videoProxy) {
+        onApiError('Attempt to pause, but no video found.');
+        return;
+    }
+    worldRenderer.videoProxy.pause();
 }
 
 function onAddHotspot(e) {
-  if (Util.isDebug()) {
-    console.log('onAddHotspot', e);
-  }
-  // TODO: Implement some validation?
+    if (Util.isDebug()) {
+        console.log('onAddHotspot', e);
+    }
+    // TODO: Implement some validation?
 
-  var pitch = parseFloat(e.pitch);
-  var yaw = parseFloat(e.yaw);
-  var radius = parseFloat(e.radius);
-  var distance = parseFloat(e.distance);
-  var customShape = e.custom;
-  var id = e.id;
-  worldRenderer.hotspotRenderer.add(pitch, yaw, radius, distance, id, customShape);
+    var pitch = parseFloat(e.pitch);
+    var yaw = parseFloat(e.yaw);
+    var radius = parseFloat(e.radius);
+    var distance = parseFloat(e.distance);
+    var customShape = e.custom;
+    var id = e.id;
+    worldRenderer.hotspotRenderer.add(pitch, yaw, radius, distance, id, customShape);
 }
 
 function onSetContent(e) {
-  if (Util.isDebug()) {
-    console.log('onSetContent', e);
-  }
-  // Remove all of the hotspots.
-  worldRenderer.hotspotRenderer.clearAll();
-  // Fade to black.
-  worldRenderer.sphereRenderer.setOpacity(0, 500).then(function() {
-    // Then load the new scene.
-    var scene = SceneInfo.loadFromAPIParams(e.contentInfo);
-    worldRenderer.destroy();
+    if (Util.isDebug()) {
+        console.log('onSetContent', e);
+    }
+    // Remove all of the hotspots.
+    worldRenderer.hotspotRenderer.clearAll();
+    // Fade to black.
+    worldRenderer.sphereRenderer.setOpacity(0, 500).then(function () {
+        // Then load the new scene.
+        var scene = SceneInfo.loadFromAPIParams(e.contentInfo);
+        worldRenderer.destroy();
 
-    // Update the URL to reflect the new scene. This is important particularily
-    // on iOS where we use a fake fullscreen mode.
-    var url = scene.getCurrentUrl();
-    //console.log('Updating url to be %s', url);
-    window.history.pushState(null, 'VR View', url);
+        // Update the URL to reflect the new scene. This is important particularily
+        // on iOS where we use a fake fullscreen mode.
+        var url = scene.getCurrentUrl();
+        //console.log('Updating url to be %s', url);
+        window.history.pushState(null, 'VR View', url);
 
-    // And set the new scene.
-    return worldRenderer.setScene(scene);
-  }).then(function() {
-    // Then fade the scene back in.
-    worldRenderer.sphereRenderer.setOpacity(1, 500);
-  });
+        // And set the new scene.
+        return worldRenderer.setScene(scene);
+    }).then(function () {
+        // Then fade the scene back in.
+        worldRenderer.sphereRenderer.setOpacity(1, 500);
+    });
 }
 
 function onSetVolume(e) {
-  // Only work for video. If there's no video, send back an error.
-  if (!worldRenderer.videoProxy) {
-    onApiError('Attempt to set volume, but no video found.');
-    return;
-  }
-  worldRenderer.videoProxy.setVolume(e.volumeLevel);
+    // Only work for video. If there's no video, send back an error.
+    if (!worldRenderer.videoProxy) {
+        onApiError('Attempt to set volume, but no video found.');
+        return;
+    }
+    worldRenderer.videoProxy.setVolume(e.volumeLevel);
+    volume = e.volumeLevel;
+    Util.sendParentMessage({
+        type: 'volumechange',
+        data: e.volumeLevel
+    });
+}
+
+function onUpdateTime(time) {
+
+    if (!worldRenderer.videoProxy) {
+        onApiError('Attempt to pause, but no video found.');
+        return;
+    }
+
+    worldRenderer.videoProxy.setCurrentTime(time);
+    onGetCurrentTime();
+}
+
+function onGetCurrentTime() {
+    var time = worldRenderer.videoProxy.getCurrentTime();
+    Util.sendParentMessage({
+        type: 'timeupdate',
+        data: time
+    });
+}
+
+function onEnded() {
+    Util.sendParentMessage({
+        type: 'ended',
+        data: true
+    });
 }
 
 function onApiError(message) {
-  console.error(message);
-  Util.sendParentMessage({
-    type: 'error',
-    data: {message: message}
-  });
+    console.error(message);
+    Util.sendParentMessage({
+        type: 'error',
+        data: {message: message}
+    });
 }
 
 function onModeChange(mode) {
-  Util.sendParentMessage({
-    type: 'modechange',
-    data: {mode: mode}
-  });
+    Util.sendParentMessage({
+        type: 'modechange',
+        data: {mode: mode}
+    });
 }
 
 function onHotspotClick(id) {
-  Util.sendParentMessage({
-    type: 'click',
-    data: {id: id}
-  });
+    Util.sendParentMessage({
+        type: 'click',
+        data: {id: id}
+    });
 }
 
 function onPlay() {
-  Util.sendParentMessage({
-    type: 'paused',
-    data: false
-  });
+    Util.sendParentMessage({
+        type: 'paused',
+        data: false
+    });
 }
 
 function onPause() {
-  Util.sendParentMessage({
-    type: 'paused',
-    data: true
-  });
+    Util.sendParentMessage({
+        type: 'paused',
+        data: true
+    });
 }
 
 function onSceneError(message) {
-  showError('Loader: ' + message);
+    showError('Loader: ' + message);
 }
 
 function onRenderError(message) {
-  showError('Render: ' + message);
+    showError('Render: ' + message);
 }
 
 function showError(message, opt_title) {
-  // Hide loading indicator.
-  loadIndicator.hide();
+    // Hide loading indicator.
+    loadIndicator.hide();
 
-  var error = document.querySelector('#error');
-  error.classList.add('visible');
-  error.querySelector('.message').innerHTML = message;
+    var error = document.querySelector('#error');
+    error.classList.add('visible');
+    error.querySelector('.message').innerHTML = message;
 
-  var title = (opt_title !== undefined ? opt_title : 'Error');
-  error.querySelector('.title').innerHTML = title;
+    var title = (opt_title !== undefined ? opt_title : 'Error');
+    error.querySelector('.title').innerHTML = title;
 }
 
 function hideError() {
-  var error = document.querySelector('#error');
-  error.classList.remove('visible');
+    var error = document.querySelector('#error');
+    error.classList.remove('visible');
 }
 
 function showPlayButton() {
-  var playButton = document.querySelector('#play-overlay');
-  playButton.classList.add('visible');
+    var playButton = document.querySelector('#play-overlay');
+    playButton.classList.add('visible');
 }
 
 function hidePlayButton() {
-  var playButton = document.querySelector('#play-overlay');
-  playButton.classList.remove('visible');
+    var playButton = document.querySelector('#play-overlay');
+    playButton.classList.remove('visible');
 }
 
 function showStats() {
-  stats.setMode(0); // 0: fps, 1: ms
+    stats.setMode(0); // 0: fps, 1: ms
 
-  // Align bottom-left.
-  stats.domElement.style.position = 'absolute';
-  stats.domElement.style.left = '0px';
-  stats.domElement.style.bottom = '0px';
-  document.body.appendChild(stats.domElement);
+    // Align bottom-left.
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.bottom = '0px';
+    document.body.appendChild(stats.domElement);
 }
 
 function loop(time) {
-  // Use the VRDisplay RAF if it is present.
-  if (worldRenderer.vrDisplay) {
-    worldRenderer.vrDisplay.requestAnimationFrame(loop);
-  } else {
-    requestAnimationFrame(loop);
-  }
+    // Use the VRDisplay RAF if it is present.
+    if (worldRenderer.vrDisplay) {
+        worldRenderer.vrDisplay.requestAnimationFrame(loop);
+    } else {
+        requestAnimationFrame(loop);
+    }
 
-  stats.begin();
-  // Update the video if needed.
-  if (worldRenderer.videoProxy) {
-    worldRenderer.videoProxy.update(time);
-  }
-  worldRenderer.render(time);
-  worldRenderer.submitFrame();
-  stats.end();
+    stats.begin();
+    // Update the video if needed.
+    if (worldRenderer.videoProxy) {
+        worldRenderer.videoProxy.update(time);
+    }
+    worldRenderer.render(time);
+    worldRenderer.submitFrame();
+    stats.end();
 }
 
 function onGetPosition() {
@@ -315,7 +357,11 @@ function onEditorShapeDrawn(shape) {
         type: Message.END_DRAW,
         data: {
             id: shape.id,
-            vertices: shape.children.filter(function(el){ return el.name === 'handle'; }).map(function(el) { return el.position; })
+            vertices: shape.children.filter(function (el) {
+                return el.name === 'handle';
+            }).map(function (el) {
+                return el.position;
+            })
         }
     });
 }
@@ -325,7 +371,11 @@ function onEditorShapeTransformed(shape) {
         type: Message.SHAPE_TRANSFORMED,
         data: {
             id: shape.id,
-            vertices: shape.children.filter(function(el){ return el.name === 'handle'; }).map(function(el) { return el.position; })
+            vertices: shape.children.filter(function (el) {
+                return el.name === 'handle';
+            }).map(function (el) {
+                return el.position;
+            })
         }
     });
 }
@@ -354,8 +404,10 @@ function onAddShape(data) {
 
     var vertices = data.params.vertices;
 
-    if(vertices.length && !(vertices[0] instanceof THREE.Vector3)) {
-        vertices = vertices.map(function(p) { return new THREE.Vector3(p.x, p.y, p.z); })
+    if (vertices.length && !(vertices[0] instanceof THREE.Vector3)) {
+        vertices = vertices.map(function (p) {
+            return new THREE.Vector3(p.x, p.y, p.z);
+        })
     }
 
     worldRenderer.editorRenderer.createShape(vertices, data.id);
@@ -365,4 +417,12 @@ function onEditShape(data) {
 }
 function onRemoveShape(data) {
     worldRenderer.editorRenderer.removeShape(data.id);
+}
+
+function onSeek(data) {
+    if (!worldRenderer.videoProxy) {
+        onApiError('Attempt to seek, but no video found.');
+        return;
+    }
+    worldRenderer.videoProxy.seek(); // data.frame
 }
