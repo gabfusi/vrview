@@ -106,7 +106,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
     if(this.selectedShape && !intersectingShape) {
         // if a shape was selected but now it's not, deselect it
         if(this.editorMode) {
-            this.blurShape_(this.selectedShape.id);
+            this.blurShape_(this.selectedShape.uuid);
         }
 
         this.deselectShape();
@@ -119,7 +119,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
             this.selectShape(intersectingShape);
 
             if(this.editorMode) {
-                this.focusShape_(intersectingShape.id);
+                this.focusShape_(intersectingShape.uuid);
             }
         }
     }
