@@ -356,7 +356,7 @@ function onEditorShapeDrawn(shape) {
     Util.sendParentMessage({
         type: Message.END_DRAW,
         data: {
-            id: shape.id,
+            id: shape.uuid,
             vertices: shape.children.filter(function (el) {
                 return el.name === 'handle';
             }).map(function (el) {

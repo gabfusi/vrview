@@ -302,7 +302,7 @@ EditorRenderer.prototype.createShape = function (vertices, id) {
     if(id) shape.name = id;
 
     // add shape to scene
-    this.shapes[shape.id] = shape;
+    this.shapes[shape.uuid] = shape;
     this.shapesRoot.add(shape);
 
     return shape;
