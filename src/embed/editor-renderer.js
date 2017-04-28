@@ -163,7 +163,7 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
                 if(this.prevPointerPosition) {
                     // TODO!
                     //var delta = this.calculateDelta_(this.prevPointerPosition, pointOnSphere);
-                    //this.translateShape_(this.selectedShape, delta);
+                    this.translateShape_(this.selectedShape, this.prevPointerPosition, pointOnSphere);
                     //console.log(delta);
                 }
 
@@ -183,11 +183,18 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
     if(this.isDrawing()) {
         e.stopPropagation();
     }
+
     this.isDragging = false;
 
     if(this.selectedShapeHandle) {
-        this.emit('transformed', this.selectedShapeHandle.parent)
+        this.emit('transformed', this.selectedShapeHandle.parent);
     }
+
+    if(this.selectedShape) {
+        this.emit('transformed', this.selectedShape);
+        this.prevPointerPosition = null;
+    }
+
 };
 
 /**
@@ -513,59 +520,17 @@ EditorRenderer.prototype.getClickPositionOnSphere_ = function () {
 };
 
 
+EditorRenderer.prototype.translateShape_ = function (shape, fromPoint, toPoint) {
 
-EditorRenderer.prototype.calculateDelta_ = function (p1, p2) {
-    var x, y, z;
-
-    x = p2.x - p1.x;
-    y = p2.y - p1.y;
-    z = p2.z - p1.z;
-
-    return new THREE.Vector3(x, y, z);
-};
-
-EditorRenderer.prototype.translateShape_ = function (shape, delta) {
-    var shapeNeedsUpdate = false;
-
-    if(delta.x === delta.y === delta.z === 0) {
-        return;
-    }
-
-    shape.translateX(delta.x);
-    shape.translateY(delta.y);
-    shape.translateZ(delta.z);
-
-    return;
+    var quaternion = new THREE.Quaternion().setFromUnitVectors(fromPoint.normalize(), toPoint.normalize());
 
     for(var i = 0; i < shape.children.length; i++) {
         if(shape.children[i].name === 'handle') {
-            /*
-             shape.children[i].translateX(delta.x);
-             shape.children[i].translateY(delta.y);
-             shape.children[i].translateZ(delta.z);
-             */
-
-            var point = new THREE.Vector3(
-                shape.children[i].position.x + delta.x,
-                shape.children[i].position.y + delta.y,
-                shape.children[i].position.z + delta.z);
-
-            var pointOnSphere = this.getPointPositionOnSphere_(point);
-
-            if(pointOnSphere) {
-                shape.children[i].position.x = pointOnSphere.x;
-                shape.children[i].position.y = pointOnSphere.y;
-                shape.children[i].position.z = pointOnSphere.z;
-                shapeNeedsUpdate = true;
-            }
-
+            shape.children[i].position.applyQuaternion(quaternion);
         }
     }
 
-    if(shapeNeedsUpdate) {
-        this.updateShapeFill_(shape, true);
-        shape.lookAt(new THREE.Vector3(0,0,0))
-    }
+    this.updateShapeFill_(shape, true);
 };
 
 EditorRenderer.prototype.getPointPositionOnSphere_ = function (point) {

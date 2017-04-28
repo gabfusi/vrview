@@ -32,8 +32,8 @@ var FAKE_FULLSCREEN_CLASS = 'vrview-fake-fullscreen';
  */
 function Player(selector, contentInfo, options) {
     // custom global options
-    this.autoplay = typeof options.autoplay !== 'undefined' ? !!options.autoplay : true;
-    this.assetsUrl = typeof options.assetsUrl !== 'undefined' ? options.assetsUrl : false;
+    this.autoplay = options && typeof options.autoplay !== 'undefined' ? !!options.autoplay : true;
+    this.assetsUrl = options && typeof options.assetsUrl !== 'undefined' ? options.assetsUrl : false;
 
     contentInfo.autoplay = this.autoplay;
 
