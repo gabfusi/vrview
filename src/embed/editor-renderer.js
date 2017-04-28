@@ -87,6 +87,8 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
     var handle;
     var isHandle;
     this.updateMouse_(e);
+    this.wasShapeTransformed = false;
+    this.wasShapeHandleTransformed = false;
 
     // check if click intersects with some shapes...
     intersectingShape = this.getIntersectingShapeOrHandles_();
@@ -155,16 +157,15 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
 
             if(this.selectedShapeHandle) {
                 // translate shape handle
+                this.wasShapeHandleTransformed = true;
                 this.selectedShapeHandle.position.copy(pointOnSphere);
                 this.updateShapeFill_(this.selectedShapeHandle.parent, true);
             }
             else if(this.selectedShape) {
                 // translate entire shape
                 if(this.prevPointerPosition) {
-                    // TODO!
-                    //var delta = this.calculateDelta_(this.prevPointerPosition, pointOnSphere);
+                    this.wasShapeTransformed = true;
                     this.translateShape_(this.selectedShape, this.prevPointerPosition, pointOnSphere);
-                    //console.log(delta);
                 }
 
                 this.prevPointerPosition = pointOnSphere;
@@ -186,16 +187,15 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
 
     this.isDragging = false;
 
-    if(this.selectedShapeHandle) {
+    if(this.selectedShapeHandle && this.wasShapeHandleTransformed) {
         this.emit('transformed', this.selectedShapeHandle.parent);
         this.selectedShapeHandle = null;
     }
 
-    else if(this.selectedShape) {
+    else if(this.selectedShape && this.wasShapeTransformed) {
         this.emit('transformed', this.selectedShape);
         this.prevPointerPosition = null;
     }
-
 };
 
 /**
