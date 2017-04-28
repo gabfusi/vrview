@@ -173,6 +173,8 @@ function onSetContent(e) {
     if (Util.isDebug()) {
         console.log('onSetContent', e);
     }
+    // Remove all of the shapes.
+    worldRenderer.editorRenderer.clearShapes();
     // Remove all of the hotspots.
     worldRenderer.hotspotRenderer.clearAll();
     // Fade to black.
