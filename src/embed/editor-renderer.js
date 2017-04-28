@@ -188,9 +188,10 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
 
     if(this.selectedShapeHandle) {
         this.emit('transformed', this.selectedShapeHandle.parent);
+        this.selectedShapeHandle = null;
     }
 
-    if(this.selectedShape) {
+    else if(this.selectedShape) {
         this.emit('transformed', this.selectedShape);
         this.prevPointerPosition = null;
     }
