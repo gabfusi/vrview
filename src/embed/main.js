@@ -356,7 +356,7 @@ function onEditorShapeDrawn(shape) {
     Util.sendParentMessage({
         type: Message.END_DRAW,
         data: {
-            id: shape.uuid,
+            id: shape.name,
             vertices: shape.children.filter(function (el) {
                 return el.name === 'handle';
             }).map(function (el) {
@@ -370,7 +370,7 @@ function onEditorShapeTransformed(shape) {
     Util.sendParentMessage({
         type: Message.SHAPE_TRANSFORMED,
         data: {
-            id: shape.id,
+            id: shape.name,
             vertices: shape.children.filter(function (el) {
                 return el.name === 'handle';
             }).map(function (el) {
@@ -386,7 +386,7 @@ function onEditorShapeSelected(shape) {
     Util.sendParentMessage({
         type: Message.SHAPE_SELECTED,
         data: {
-            id: shape.id
+            id: shape.name
         }
     });
 }
