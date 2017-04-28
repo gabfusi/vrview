@@ -106,7 +106,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
     if(this.selectedShape && !intersectingShape) {
         // if a shape was selected but now it's not, deselect it
         if(this.editorMode) {
-            this.blurShape_(this.selectedShape.uuid);
+            this.blurShape_(this.selectedShape.name);
         }
 
         this.deselectShape();
@@ -119,7 +119,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
             this.selectShape(intersectingShape);
 
             if(this.editorMode) {
-                this.focusShape_(intersectingShape.uuid);
+                this.focusShape_(intersectingShape.name);
             }
         }
     }
@@ -299,10 +299,10 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
 EditorRenderer.prototype.createShape = function (vertices, id) {
 
     var shape = this.createShape_(vertices);
-    if(id) shape.name = id;
+    shape.name = id || shape.uuid;
 
     // add shape to scene
-    this.shapes[shape.uuid] = shape;
+    this.shapes[shape.name] = shape;
     this.shapesRoot.add(shape);
 
     return shape;
