@@ -105,7 +105,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
     }
 
     // check if current shape has to be unselected
-    if(this.selectedShape && !intersectingShape) {
+    if(this.selectedShape && (!intersectingShape || this.selectedShape !== intersectingShape)) {
         // if a shape was selected but now it's not, deselect it
         if(this.editorMode) {
             this.blurShape_(this.selectedShape.name);
@@ -492,23 +492,36 @@ EditorRenderer.prototype.getIntersectingShapeOrHandles_ = function () {
 
     // create an array containing all objects in the scene with which the ray intersects
     var targetList = this.shapesRoot.children;
+    var intersectingHandles = [];
+    var intersectingShapes = [];
     for (var i = 0; i < targetList.length; i++) {
         var shape = targetList[i];
         var intersects = ray.intersectObjects(shape.children);
-
-        console.log(intersects)
 
         // if there is one (or more) intersections
         if (intersects.length) {
             for(var j = 0; j < intersects.length; j++) {
                 if(intersects[j].object.name === 'handle') {
-                    return intersects[j].object;
+                    intersectingHandles.push(intersects[j]);
                 }
                 else if(intersects[j].object.name === 'fill') {
-                    return intersects[j].object.parent;
+                    intersectingShapes.push(intersects[j]);
                 }
             }
         }
+    }
+
+    var sorted;
+
+    if(intersectingHandles.length) {
+        sorted = intersectingHandles.sort(function(a, b){ return a.distance - b.distance; });
+        console.log(sorted);
+        return sorted[0].object;
+    }
+    else if(intersectingShapes.length) {
+        sorted = intersectingShapes.sort(function(a, b){ return a.distance - b.distance; });
+        console.log(sorted);
+        return sorted[0].object.parent;
     }
 };
 
