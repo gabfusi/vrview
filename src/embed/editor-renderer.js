@@ -353,8 +353,25 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
 EditorRenderer.prototype.editShape = function (id, params) {
     console.warn('editShape(id, params) not implemented yet!', id, params);
 };
-EditorRenderer.prototype.removeShape = function (id, params) {
-    console.warn('removeShape(id) not implemented yet!', id);
+
+EditorRenderer.prototype.removeShape = function (id) {
+    // If there's no shape with this ID, fail.
+    if (!this.shapes[id]) {
+        // TODO: Proper error reporting.
+        console.error('Attempt to remove non-existing shape with id %s.', id);
+        return;
+    }
+    // Remove the mesh from the scene.
+    this.shapesRoot.remove(this.shapes[id]);
+
+    // If this shape was selected, make sure it gets unselected.
+    this.selectedShape = null;
+};
+
+EditorRenderer.prototype.clearShapes = function () {
+    for(var id in this.shapes) {
+        this.removeShape(id);
+    }
 };
 
 /**

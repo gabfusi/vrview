@@ -308,9 +308,15 @@ Player.prototype.editShape = function (shapeId, params) {
 Player.prototype.removeShape = function (shapeId) {
     this.sender.send({type: Message.REMOVE_SHAPE, data: {id: shapeId}});
 };
+
 Player.prototype.seek = function (frame) {
     this.sender.send({type: Message.SEEK, data: {frame: frame}});
 };
+
+Player.prototype.clearShapes = function () {
+    this.sender.send({type: Message.CLEAR_SHAPES, data: {}});
+};
+
 Player.prototype.setAutoplay = function (bool) {
     this.sender.send({type: Message.SET_AUTOPLAY, data: { autoplay: bool }});
 };

@@ -33,6 +33,7 @@ var Message = {
     ADD_SHAPE: 'addshape',
     EDIT_SHAPE: 'editshape',
     REMOVE_SHAPE: 'removeshape',
+    CLEAR_SHAPES: 'clearshapes',
     SHAPE_TRANSFORMED: 'shapetransformed',
     SHAPE_SELECTED: 'shapeselected',
     SHAPE_UNSELECTED: 'shapeunselected'

@@ -42,6 +42,7 @@ receiver.on(Message.END_DRAW, onEndDraw);
 receiver.on(Message.ADD_SHAPE, onAddShape);
 receiver.on(Message.EDIT_SHAPE, onEditShape);
 receiver.on(Message.REMOVE_SHAPE, onRemoveShape);
+receiver.on(Message.CLEAR_SHAPES, onClearShapes);
 receiver.on(Message.SET_CURRENT_TIME, onUpdateTime);
 
 window.addEventListener('load', onLoad);
@@ -415,8 +416,13 @@ function onAddShape(data) {
 function onEditShape(data) {
     worldRenderer.editorRenderer.editShape(data.id, data.params);
 }
+
 function onRemoveShape(data) {
     worldRenderer.editorRenderer.removeShape(data.id);
+}
+
+function onClearShapes() {
+    worldRenderer.editorRenderer.clearShapes();
 }
 
 function onSeek(data) {
