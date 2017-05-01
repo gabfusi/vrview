@@ -40,6 +40,7 @@ receiver.on(Message.GET_POSITION, onGetPosition);
 receiver.on(Message.START_DRAW, onStartDraw);
 receiver.on(Message.END_DRAW, onEndDraw);
 receiver.on(Message.ADD_SHAPE, onAddShape);
+receiver.on(Message.ADD_SHAPE_KEYFRAME, onAddShapeKeyframe);
 receiver.on(Message.EDIT_SHAPE, onEditShape);
 receiver.on(Message.REMOVE_SHAPE, onRemoveShape);
 receiver.on(Message.CLEAR_SHAPES, onClearShapes);
@@ -415,6 +416,24 @@ function onAddShape(data) {
 
     worldRenderer.editorRenderer.createShape(vertices, data.id);
 }
+
+function onAddShapeKeyframe(data) {
+
+    var vertices = data.params.vertices;
+    var frame = data.params.frame;
+
+    if (vertices.length && !(vertices[0] instanceof THREE.Vector3)) {
+        vertices = vertices.map(function (p) {
+            return new THREE.Vector3(p.x, p.y, p.z);
+        })
+    }
+
+    console.log(data.id, frame, vertices)
+
+    worldRenderer.editorRenderer.addShapeKeyframe(data.id, frame, vertices);
+
+}
+
 function onEditShape(data) {
     worldRenderer.editorRenderer.editShape(data.id, data.params);
 }

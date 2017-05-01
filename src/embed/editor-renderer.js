@@ -26,12 +26,16 @@ function EditorRenderer(worldRenderer) {
     this.currentShapeHandles = [];
     // shapes drawn
     this.shapes = {};
+    // shapes keyframes (position of vertices during video time)
+    this.shapesKeyframes = {};
     // currently selected shape
     this.selectedShape = null;
     // currently selected shape handle
     this.selectedShapeHandle = null;
     // flag for track dragging
     this.isDragging = false;
+    // video time
+    this.videoTime = 0;
 
     var body = document.body;
     if (!Util.isMobile()) {
@@ -53,7 +57,106 @@ function EditorRenderer(worldRenderer) {
     this.pointer = new THREE.Vector2(1, 1);
     this.raycaster = new THREE.Raycaster();
 }
+
 EditorRenderer.prototype = new EventEmitter();
+
+EditorRenderer.prototype.update = function (time, videoTime) {
+
+    // on each video frame
+    if(this.videoTime !== videoTime.currentTime) {
+
+        var shape,
+            shapePoints,
+            shapePointVector,
+            shapePointTransitionQuaternion,
+            temp,
+            shapesKeyframesIndex,
+            percentage;
+
+        for(var shape_id in this.shapesKeyframes) {
+
+            temp = this.getShapeAnimationPercentage_(shape_id, videoTime.currentTime);
+
+            if(!temp) {
+                return;
+            }
+
+            shapesKeyframesIndex = temp[0]; // initial keyframe index
+            percentage = temp[1];           // percentage [0, 1] of the transformation
+
+            shape = this.shapes[shape_id];
+            shapePoints = this.shapesKeyframes[shape_id][shapesKeyframesIndex].vertices;
+
+            // translate all shape point using Quaternion.slerp
+            for(var i = 0, l = shapePoints.length; i < l; i++) {
+                shapePointVector = new THREE.Vector3(shapePoints[i].x, shapePoints[i].y, shapePoints[i].z);
+                shapePointTransitionQuaternion = (new THREE.Quaternion()).slerp(shapePoints[i].quaternion, percentage);
+
+                if(shape.children[i].name === 'handle') {
+                    shape.children[i].position.copy(shapePointVector.applyQuaternion(shapePointTransitionQuaternion));
+                }
+            }
+
+            this.updateShapeFill_(shape, false);
+        }
+
+        this.videoTime = videoTime.currentTime;
+    }
+
+};
+
+EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame) {
+
+    var shapeKeyframes = this.shapesKeyframes[shape_id],
+        startFrame, endFrame,
+        Q1, Q2;
+
+    if(!shapeKeyframes) {
+        return false;
+    }
+
+    if(shapeKeyframes.length < 2) {
+        // don't trasform if there is only 1 keyframe
+        return false;
+    }
+
+    if(shapeKeyframes[shapeKeyframes.length-1].frame < frame) {
+        // don't trasform after last keyframe
+        return false;
+    }
+
+    // get rotation quaternions
+    for(var i = 0, l = shapeKeyframes.length-1; i < l; i++) {
+        startFrame = shapeKeyframes[i].frame;
+        endFrame = shapeKeyframes[i+1].frame;
+
+        if(startFrame <= frame && frame <= endFrame) {
+
+            if(typeof shapeKeyframes[i].quaternions === 'undefined') {
+
+                // calculate shape transformations
+                for(var j = 0, ll = shapeKeyframes[i].vertices.length; j < ll; j++) {
+
+                    if(typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
+
+                        Q1 = shapeKeyframes[i].vertices[j];
+                        Q2 = shapeKeyframes[i+1].vertices[j];
+
+                        shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
+                    }
+
+                }
+            }
+
+            // return animation percentage [0, 1]
+            return [i, (frame - startFrame) / (endFrame - startFrame)];
+        }
+    }
+
+    console.warn('Frame outside shape time frame, TODO hide shape...', startFrame, frame, endFrame);
+    return false;
+
+};
 
 /**
  * Returns true if draw tool is active or if a shape is selected
@@ -297,10 +400,23 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
 
 };
 
+
+/**
+ * Creates a shape
+ * @param vertices
+ * @param id
+ * @returns {SEA3D.Object3D|THREE.SEA3D.Object3D|*|Object3D|W|x}
+ */
 EditorRenderer.prototype.createShape = function (vertices, id) {
 
     var shape = this.createShape_(vertices);
     shape.name = id || shape.uuid;
+
+    // add vertices to shapes keyframes
+    this.shapesKeyframes[shape.name] = [{
+        frame: 0,
+        vertices: vertices
+    }];
 
     // add shape to scene
     this.shapes[shape.name] = shape;
@@ -308,6 +424,38 @@ EditorRenderer.prototype.createShape = function (vertices, id) {
 
     return shape;
 };
+
+EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices) {
+
+    var shape,
+        shapeKeyframes;
+
+    if(typeof this.shapes[shape_id] === 'undefined') {
+        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', it doesn\'t exists.');
+        return false;
+    }
+
+    shape = this.shapes[shape_id];
+    shapeKeyframes = this.shapesKeyframes[shape_id];
+
+    if(!(vertices instanceof Array && shape.children.length-1 === vertices.length)) {
+        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', different number of vertices.');
+        return false;
+    }
+
+    // add to shapesKeyframes object
+    this.shapesKeyframes[shape_id].push({
+        frame: frame,
+        vertices: vertices
+    });
+
+    console.log(this.shapesKeyframes)
+
+    // order frames ascending
+    shapeKeyframes.sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
+
+};
+
 
 /**
  * Creates a shape form a set of vertices (points)
@@ -363,6 +511,9 @@ EditorRenderer.prototype.removeShape = function (id) {
     }
     // Remove the mesh from the scene.
     this.shapesRoot.remove(this.shapes[id]);
+
+    delete this.shapes[id];
+    delete this.shapesKeyframes[id];
 
     // If this shape was selected, make sure it gets unselected.
     this.selectedShape = null;

@@ -301,6 +301,11 @@ Player.prototype.addShape = function (shapeId, params) {
     this.sender.send({type: Message.ADD_SHAPE, data: {id: shapeId, params: params}});
 };
 
+Player.prototype.addShapeKeyframe = function (shapeId, frame, params) {
+    params.frame = frame;
+    this.sender.send({type: Message.ADD_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+};
+
 Player.prototype.editShape = function (shapeId, params) {
     this.sender.send({type: Message.EDIT_SHAPE, data: {id: shapeId, params: params}});
 };

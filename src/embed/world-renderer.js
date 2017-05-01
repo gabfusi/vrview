@@ -50,6 +50,7 @@ function WorldRenderer() {
     this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
     this.reticleRenderer = new ReticleRenderer(this.camera);
     this.editorRenderer = new EditorRenderer(this);
+    this.currentVideoTime = null;
 
     // Get the VR Display as soon as we initialize.
     navigator.getVRDisplays().then(function (displays) {
@@ -69,8 +70,10 @@ WorldRenderer.prototype.render = function (time) {
     TWEEN.update(time);
     this.effect.render(this.scene, this.camera);
     if(this.videoProxy) {
-        this.emit('timeupdate', this.videoProxy.getCurrentTime());
+        this.currentVideoTime = this.videoProxy.getCurrentTime();
+        this.emit('timeupdate', this.currentVideoTime);
     }
+    this.editorRenderer.update(time, this.currentVideoTime);
     this.dispose();
 };
 

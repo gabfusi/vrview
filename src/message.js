@@ -31,6 +31,7 @@ var Message = {
     START_DRAW: 'startdraw',
     END_DRAW: 'enddraw',
     ADD_SHAPE: 'addshape',
+    ADD_SHAPE_KEYFRAME: 'addshapekeyframe',
     EDIT_SHAPE: 'editshape',
     REMOVE_SHAPE: 'removeshape',
     CLEAR_SHAPES: 'clearshapes',
