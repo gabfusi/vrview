@@ -63,7 +63,7 @@ EditorRenderer.prototype = new EventEmitter();
 EditorRenderer.prototype.update = function (time, videoTime) {
 
     // on each video frame
-    if(this.videoTime !== videoTime.currentTime) {
+    if(videoTime && this.videoTime !== videoTime.currentTime) {
 
         var shape,
             shapePoints,
