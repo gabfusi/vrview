@@ -220,6 +220,7 @@ function onUpdateTime(time) {
     }
 
     worldRenderer.videoProxy.setCurrentTime(time);
+    worldRenderer.editorRenderer.update(null, time.currentTime);
     onGetCurrentTime();
 }
 

@@ -449,8 +449,6 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
         vertices: vertices
     });
 
-    console.log(this.shapesKeyframes)
-
     // order frames ascending
     shapeKeyframes.sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
 
@@ -460,7 +458,6 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
 /**
  * Creates a shape form a set of vertices (points)
  * @param vertices
- * @param id (optional)
  * @returns {SEA3D.Object3D|THREE.SEA3D.Object3D|*|Object3D|W|x}
  */
 EditorRenderer.prototype.createShape_ = function (vertices) {
