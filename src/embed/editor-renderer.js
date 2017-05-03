@@ -79,17 +79,12 @@ EditorRenderer.prototype.update = function (time, videoTime) {
             temp = this.getShapeAnimationPercentage_(shape_id, videoTime.currentTime);
             shape = this.shapes[shape_id];
 
-            if(!temp) {
-
-                if(temp === -1) {
-                    // hide shape
-                    shape.visible = false;
-                } else {
-
-                    console.error('Some error occurred', temp);
-                }
-
+            if(temp === -1) {
+                // hide shape
+                shape.visible = false;
                 return;
+            } else if(temp === false) {
+                return; // do not interpolate shape
             }
 
             shapesKeyframesIndex = temp[0]; // initial keyframe index
@@ -107,8 +102,11 @@ EditorRenderer.prototype.update = function (time, videoTime) {
                 }
             }
 
-            shape.visible = true;
             this.updateShapeFill_(shape, false);
+
+            if(!shape.visible) {
+                shape.visible = true;
+            }
         }
 
     }
@@ -130,9 +128,9 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
         return false;
     }
 
-    if(shapeKeyframes[shapeKeyframes.length-1].frame < frame) {
+    else if(shapeKeyframes[shapeKeyframes.length-1].frame < frame) {
         // don't trasform after last keyframe
-        return false;
+        return -1;
     }
 
     // get rotation quaternions
@@ -432,73 +430,6 @@ EditorRenderer.prototype.createShape = function (vertices, id) {
     return shape;
 };
 
-EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices) {
-
-    var shape,
-        shapeKeyframes;
-
-    if(typeof this.shapes[shape_id] === 'undefined') {
-        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', it doesn\'t exists.');
-        return false;
-    }
-
-    shape = this.shapes[shape_id];
-
-    if(!(vertices instanceof Array && shape.children.length-1 === vertices.length)) {
-        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', different number of vertices.');
-        return false;
-    }
-
-    // add to shapesKeyframes object
-    this.shapesKeyframes[shape_id].push({
-        frame: frame,
-        vertices: vertices
-    });
-
-    // order frames ascending
-    this.shapesKeyframes[shape_id].sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
-
-};
-
-EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, vertices) {
-
-    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
-        console.warn('Cannot update shape, no shape found:' + shape_id);
-        return;
-    }
-
-    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
-        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
-            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
-            this.shapesKeyframes[shape_id][i].vertices.length = 0;
-            for(var j = 0; j < this.shapesKeyframes[shape_id][i].vertices.length; j++) {
-                delete this.shapesKeyframes[shape_id][i].vertices[j].quaternion;
-            }
-            this.shapesKeyframes[shape_id][i].vertices = vertices;
-            return;
-        }
-    }
-
-    console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
-};
-
-EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
-
-    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
-        console.warn('Cannot update shape, no shape found:' + shape_id);
-        return;
-    }
-
-    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
-        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
-            console.log('Deleting keyframe ' + keyframe + ' for shape ' + shape_id);
-            this.shapesKeyframes[shape_id].splice(i, 1);
-            return;
-        }
-    }
-
-};
-
 /**
  * Creates a shape form a set of vertices (points)
  * @param vertices
@@ -675,6 +606,91 @@ EditorRenderer.prototype.createHandle_ = function (point) {
 };
 
 /**
+ * Add a keyframe to a shape
+ * @param shape_id
+ * @param frame
+ * @param vertices
+ * @returns {boolean}
+ */
+EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices) {
+
+    var shape;
+
+    if(typeof this.shapes[shape_id] === 'undefined') {
+        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', it doesn\'t exists.');
+        return false;
+    }
+
+    shape = this.shapes[shape_id];
+
+    if(!(vertices instanceof Array && shape.children.length-1 === vertices.length)) {
+        console.warn('Cannot add keyframe to shape with id ' + shape_id + ', different number of vertices.');
+        return false;
+    }
+
+    // add to shapesKeyframes object
+    this.shapesKeyframes[shape_id].push({
+        frame: frame,
+        vertices: vertices
+    });
+
+    // order frames ascending
+    this.shapesKeyframes[shape_id].sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
+
+};
+
+/**
+ * Edit a keyframe shape
+ * @param shape_id
+ * @param keyframe
+ * @param vertices
+ */
+EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, vertices) {
+
+    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + shape_id);
+        return;
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
+        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
+            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
+            this.shapesKeyframes[shape_id][i].vertices.length = 0;
+            for(var j = 0; j < this.shapesKeyframes[shape_id][i].vertices.length; j++) {
+                delete this.shapesKeyframes[shape_id][i].vertices[j].quaternion;
+            }
+            this.shapesKeyframes[shape_id][i].vertices = vertices;
+            return;
+        }
+    }
+
+    console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
+};
+
+/**
+ * Remove a keyframe
+ * @param shape_id
+ * @param keyframe
+ */
+EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
+
+    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + shape_id);
+        return;
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
+        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
+            console.log('Deleting keyframe ' + keyframe + ' for shape ' + shape_id);
+            this.shapesKeyframes[shape_id].splice(i, 1);
+            return;
+        }
+    }
+
+};
+
+
+/**
  * Return the shape selected by a mouse click
  * @returns {*}
  * @private
@@ -748,7 +764,13 @@ EditorRenderer.prototype.getClickPositionOnSphere_ = function () {
 
 };
 
-
+/**
+ * Translate a shape (on mouse move)
+ * @param shape
+ * @param fromPoint
+ * @param toPoint
+ * @private
+ */
 EditorRenderer.prototype.translateShape_ = function (shape, fromPoint, toPoint) {
 
     var quaternion = new THREE.Quaternion().setFromUnitVectors(fromPoint.normalize(), toPoint.normalize());
@@ -760,28 +782,6 @@ EditorRenderer.prototype.translateShape_ = function (shape, fromPoint, toPoint) 
     }
 
     this.updateShapeFill_(shape, true);
-};
-
-EditorRenderer.prototype.getPointPositionOnSphere_ = function (point) {
-
-    // create a Ray with origin at the mouse position
-    //   and direction into the scene (camera direction)
-    var camera = this.worldRenderer.camera;
-    var vector = new THREE.Vector3(point.x, point.y, point.z);
-    vector.unproject(camera);
-    var ray = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
-
-    // create an array containing all objects in the scene with which the ray intersects
-    var targetList = this.scene.getObjectByName('photo').children;
-    var intersects = ray.intersectObjects(targetList);
-
-    // if there is one (or more) intersections
-    if (intersects.length > 0) {
-        //var h = this.createHandle_(intersects[0].point);
-        //this.selectedShape.add(h);
-        return intersects[0].point;
-    }
-
 };
 
 /**
