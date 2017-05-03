@@ -495,8 +495,26 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
     return shape;
 };
 
+/**
+ * edit a shape at a specified frame
+ * @param id
+ * @param params
+ */
 EditorRenderer.prototype.editShape = function (id, params) {
-    console.warn('editShape(id, params) not implemented yet!', id, params);
+
+    if(typeof this.shapesKeyframes[id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + id);
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
+        if(this.shapesKeyframes[id][i].frame === params.keyframe) {
+            this.shapesKeyframes[id][i].vertices.length = 0;
+            this.shapesKeyframes[id][i].vertices = params.vertices;
+            return;
+        }
+    }
+
+    console.warn('Cannot update shape, no keyframe or shape found at ' + params.keyframe + ' for shape with id ' + id);
 };
 
 EditorRenderer.prototype.removeShape = function (id) {
