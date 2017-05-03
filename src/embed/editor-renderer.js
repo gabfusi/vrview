@@ -465,6 +465,7 @@ EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, verti
         if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
             console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
             this.shapesKeyframes[shape_id][i].vertices.length = 0;
+            delete this.shapesKeyframes[shape_id][i].quaternion;
             this.shapesKeyframes[shape_id][i].vertices = vertices;
             return;
         }
