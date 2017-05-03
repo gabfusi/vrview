@@ -318,9 +318,8 @@ Player.prototype.editShapeKeyframe = function (shapeId, frame, params) {
     params.frame = frame;
     this.sender.send({type: Message.EDIT_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
 };
-Player.prototype.removeShapeKeyframe = function (shapeId, frame, params) {
-    params.frame = frame;
-    this.sender.send({type: Message.REMOVE_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+Player.prototype.removeShapeKeyframe = function (shapeId, frame) {
+    this.sender.send({type: Message.REMOVE_SHAPE_KEYFRAME, data: {id: shapeId, params: { frame: frame }}});
 };
 
 Player.prototype.seek = function (frame) {

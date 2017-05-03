@@ -436,7 +436,6 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
     }
 
     shape = this.shapes[shape_id];
-    shapeKeyframes = this.shapesKeyframes[shape_id];
 
     if(!(vertices instanceof Array && shape.children.length-1 === vertices.length)) {
         console.warn('Cannot add keyframe to shape with id ' + shape_id + ', different number of vertices.');
@@ -450,7 +449,7 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
     });
 
     // order frames ascending
-    shapeKeyframes.sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
+    this.shapesKeyframes[shape_id].sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
 
 };
 
