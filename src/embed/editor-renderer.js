@@ -77,15 +77,24 @@ EditorRenderer.prototype.update = function (time, videoTime) {
         for(var shape_id in this.shapesKeyframes) {
 
             temp = this.getShapeAnimationPercentage_(shape_id, videoTime.currentTime);
+            shape = this.shapes[shape_id];
 
             if(!temp) {
+
+                if(temp === -1) {
+                    // hide shape
+                    shape.visible = false;
+                } else {
+
+                    console.error('Some error occurred', temp);
+                }
+
                 return;
             }
 
             shapesKeyframesIndex = temp[0]; // initial keyframe index
             percentage = temp[1];           // percentage [0, 1] of the transformation
 
-            shape = this.shapes[shape_id];
             shapePoints = this.shapesKeyframes[shape_id][shapesKeyframesIndex].vertices;
 
             // translate all shape point using Quaternion.slerp
@@ -98,6 +107,7 @@ EditorRenderer.prototype.update = function (time, videoTime) {
                 }
             }
 
+            shape.visible = true;
             this.updateShapeFill_(shape, false);
         }
 
@@ -154,7 +164,7 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
     }
 
     console.warn('Frame outside shape time frame, TODO hide shape...', startFrame, frame, endFrame);
-    return false;
+    return -1;
 
 };
 
