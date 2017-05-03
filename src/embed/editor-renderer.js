@@ -508,6 +508,7 @@ EditorRenderer.prototype.editShape = function (id, params) {
 
     for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
         if(this.shapesKeyframes[id][i].frame === params.keyframe) {
+            console.log('Updating shape ' + id + ' at keyframe ' + params.keyframe + ' was ', this.shapesKeyframes[id][i].vertices, 'now', params.vertices);
             this.shapesKeyframes[id][i].vertices.length = 0;
             this.shapesKeyframes[id][i].vertices = params.vertices;
             return;
