@@ -26,6 +26,8 @@ function EditorRenderer(worldRenderer) {
     this.currentShapeHandles = [];
     // shapes drawn
     this.shapes = {};
+    // shapes info (start/end frame, color, etc)
+    this.shapesInfo = {};
     // shapes keyframes (position of vertices during video time)
     this.shapesKeyframes = {};
     // currently selected shape
@@ -60,11 +62,15 @@ function EditorRenderer(worldRenderer) {
 
 EditorRenderer.prototype = new EventEmitter();
 
-EditorRenderer.prototype.update = function (time, videoTime) {
+EditorRenderer.prototype.update = function (currentTime) {
+
+    if(!currentTime) {
+        currentTime = 0;
+    }
 
     // on each video frame
-    if(videoTime && this.videoTime !== videoTime.currentTime) {
-        this.videoTime = videoTime.currentTime;
+    if(this.videoTime !== currentTime) {
+        this.videoTime = currentTime;
 
         var shape,
             shapePoints,
@@ -76,15 +82,24 @@ EditorRenderer.prototype.update = function (time, videoTime) {
 
         for(var shape_id in this.shapesKeyframes) {
 
-            temp = this.getShapeAnimationPercentage_(shape_id, videoTime.currentTime);
+            temp = this.getShapeAnimationPercentage_(shape_id, currentTime);
             shape = this.shapes[shape_id];
 
             if(temp === -1) {
+
                 // hide shape
                 shape.visible = false;
-                return;
+                continue;
+
             } else if(temp === false) {
-                return; // do not interpolate shape
+
+                // do not interpolate shape
+
+                if(!shape.visible) {
+                    shape.visible = true;
+                }
+
+                continue;
             }
 
             shapesKeyframesIndex = temp[0]; // initial keyframe index
@@ -113,32 +128,60 @@ EditorRenderer.prototype.update = function (time, videoTime) {
 
 };
 
+/**
+ * Set shape vertices quaternion and returns:
+ * false -> means no transformation needed, shape must remain as it is
+ * -1 -> hide shape
+ * [ shapesKeyframesIndex, quaternion percentage [0,1] ]
+ *
+ * @param shape_id
+ * @param frame
+ * @returns {*}
+ * @private
+ */
 EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame) {
 
     var shapeKeyframes = this.shapesKeyframes[shape_id],
-        startFrame, endFrame,
+        startFrame,
+        endFrame,
+        firstFrame,
+        lastFrame,
+        relativeFrame,
         Q1, Q2;
 
     if(!shapeKeyframes) {
         return false;
     }
 
+    // relative frame calc
+    firstFrame = this.shapesInfo[shape_id].start_frame;
+    lastFrame = this.shapesInfo[shape_id].end_frame;
+    relativeFrame = frame - firstFrame;
+
     if(shapeKeyframes.length < 2) {
         // don't trasform if there is only 1 keyframe
         return false;
     }
 
-    else if(shapeKeyframes[shapeKeyframes.length-1].frame < frame) {
-        // don't trasform after last keyframe
+    else if(frame > lastFrame || frame < firstFrame) {
+        // hide after shape end keyframe
         return -1;
     }
 
     // get rotation quaternions
-    for(var i = 0, l = shapeKeyframes.length-1; i < l; i++) {
-        startFrame = shapeKeyframes[i].frame;
-        endFrame = shapeKeyframes[i+1].frame;
+    for(var i = 0, l = shapeKeyframes.length; i < l; i++) {
 
-        if(startFrame <= frame && frame <= endFrame) {
+        startFrame = shapeKeyframes[i].frame;
+
+        if(i+1 === l) {
+            // mimic a keyframe on shape lastFrame
+            endFrame = lastFrame;
+            return false;
+        } else {
+            endFrame = shapeKeyframes[i+1].frame;
+        }
+
+        if(startFrame <= relativeFrame && relativeFrame <= endFrame) {
 
             // calculate shape transformations
             for(var j = 0, ll = shapeKeyframes[i].vertices.length; j < ll; j++) {
@@ -149,17 +192,21 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
                     Q2 = shapeKeyframes[i+1].vertices[j];
 
                     shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
+
+                    console.debug('Created quaternion for shape ' + shape_id + ' from frame ' + shapeKeyframes[i].frame + ' and frame ' + shapeKeyframes[i+1].frame)
+                } else {
+                    console.debug('Quaternion exists for shape ' + shape_id + ' at frame ' + shapeKeyframes[i].frame)
                 }
 
             }
 
             // return animation percentage [0, 1]
-            return [i, (frame - startFrame) / (endFrame - startFrame)];
+            return [i, (relativeFrame - startFrame) / (endFrame - startFrame)];
         }
     }
 
-    console.warn('Frame outside shape time frame, TODO hide shape...', startFrame, frame, endFrame);
-    return -1;
+    console.warn('Frame outside shape time frame, TODO hide shape...', startFrame, relativeFrame, endFrame);
+    return false;
 
 };
 
@@ -423,6 +470,13 @@ EditorRenderer.prototype.createShape = function (vertices, id) {
         vertices: vertices
     }];
 
+    // add empty shape info
+    this.shapesInfo[shape.name] = {
+        background_color: INACTIVE_COLOR,
+        start_frame: 0,
+        end_frame: 60
+    };
+
     // add shape to scene
     this.shapes[shape.name] = shape;
     this.shapesRoot.add(shape);
@@ -477,9 +531,25 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
  * @param params
  */
 EditorRenderer.prototype.editShape = function (id, params) {
-    console.warn('editShape: TODO not implemented yet', id, params);
+
+    if(typeof this.shapes[id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + id);
+        return false;
+    }
+
+    this.shapesInfo[id] = null;
+
+    this.shapesInfo[id] = {
+        background_color: params.background_color || INACTIVE_COLOR,
+        start_frame: params.start_frame || 0,
+        end_frame: params.end_frame || 60
+    };
 };
 
+/**
+ * Remove a shape and all its keyframes
+ * @param id
+ */
 EditorRenderer.prototype.removeShape = function (id) {
     // If there's no shape with this ID, fail.
     if (!this.shapes[id]) {
@@ -491,12 +561,16 @@ EditorRenderer.prototype.removeShape = function (id) {
     this.shapesRoot.remove(this.shapes[id]);
 
     delete this.shapes[id];
+    delete this.shapesInfo[id];
     delete this.shapesKeyframes[id];
 
     // If this shape was selected, make sure it gets unselected.
     this.selectedShape = null;
 };
 
+/**
+ * Removes all the shapes and keyframes
+ */
 EditorRenderer.prototype.clearShapes = function () {
     for(var id in this.shapes) {
         this.removeShape(id);
@@ -637,6 +711,18 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
     // order frames ascending
     this.shapesKeyframes[shape_id].sort(function(a,b) {return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);} );
 
+    // TODO delete quaternion of previous keyframe
+
+    var keyframeIndex = this.getShapeKeyframeIndex_(shape_id, frame);
+
+    // for all shape vertices
+    for(var j = 0; j < this.shapesKeyframes[shape_id][keyframeIndex].vertices.length; j++) {
+        if(keyframeIndex > 0) {
+            // delete quaternion of the previous keyframe!
+            delete this.shapesKeyframes[shape_id][keyframeIndex-1].vertices[j].quaternion;
+        }
+    }
+
 };
 
 /**
@@ -647,24 +733,29 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
  */
 EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, vertices) {
 
-    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
-        console.warn('Cannot update shape, no shape found:' + shape_id);
-        return;
+    var keyframeIndex = this.getShapeKeyframeIndex_(shape_id, keyframe);
+
+    if(keyframeIndex === false) {
+        console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
+        return false;
     }
 
-    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
-        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
-            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
-            this.shapesKeyframes[shape_id][i].vertices.length = 0;
-            for(var j = 0; j < this.shapesKeyframes[shape_id][i].vertices.length; j++) {
-                delete this.shapesKeyframes[shape_id][i].vertices[j].quaternion;
-            }
-            this.shapesKeyframes[shape_id][i].vertices = vertices;
-            return;
+    // for all shape vertices
+    for(var j = 0; j < this.shapesKeyframes[shape_id][keyframeIndex].vertices.length; j++) {
+
+        console.log('deleting ' + keyframeIndex + ' ' + JSON.stringify(this.shapesKeyframes[shape_id][keyframeIndex].vertices[j].quaternion));
+
+        if(keyframeIndex > 0) {
+            // delete quaternion of the previous keyframe!
+            delete this.shapesKeyframes[shape_id][keyframeIndex-1].vertices[j].quaternion;
         }
+        // delete quaternion at given keyframe
+        delete this.shapesKeyframes[shape_id][keyframeIndex].vertices[j].quaternion;
+
+        // update vertices at given keyframe
+        this.shapesKeyframes[shape_id][keyframeIndex].vertices = vertices;
     }
 
-    console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
 };
 
 /**
@@ -674,19 +765,46 @@ EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, verti
  */
 EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
 
-    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
-        console.warn('Cannot update shape, no shape found:' + shape_id);
-        return;
+    var keyframeIndex = this.getShapeKeyframeIndex_(shape_id, keyframe);
+
+    if(keyframeIndex === false) {
+        console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
+        return false;
     }
 
-    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
-        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
-            console.log('Deleting keyframe ' + keyframe + ' for shape ' + shape_id);
-            this.shapesKeyframes[shape_id].splice(i, 1);
-            return;
+    // remove previous and next frame quaternion for all vertices
+    for(var j = 0; j < this.shapesKeyframes[shape_id][keyframeIndex].vertices.length; j++) {
+        if(keyframeIndex > 0) {
+            delete this.shapesKeyframes[shape_id][keyframeIndex-1].vertices[j].quaternion;
+        }
+        if(keyframeIndex <= this.shapesKeyframes[shape_id].length-1) {
+            delete this.shapesKeyframes[shape_id][keyframeIndex+1].vertices[j].quaternion;
         }
     }
 
+    // delete current keyframe
+    this.shapesKeyframes[shape_id].splice(keyframeIndex, 1);
+
+
+    console.log('Deleted keyframe ' + keyframe + ' for shape ' + shape_id);
+
+};
+
+
+EditorRenderer.prototype.getShapeKeyframeIndex_ = function (shape_id, keyframe) {
+
+    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + shape_id);
+        return false;
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
+        if (this.shapesKeyframes[shape_id][i].frame === keyframe) {
+            return i;
+        }
+    }
+
+    return false;
 };
 
 

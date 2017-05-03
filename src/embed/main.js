@@ -216,14 +216,15 @@ function onSetVolume(e) {
 
 function onUpdateTime(time) {
 
+    worldRenderer.editorRenderer.update(time.currentTime);
+
     if (!worldRenderer.videoProxy) {
         onApiError('Attempt to pause, but no video found.');
         return;
     }
 
     worldRenderer.videoProxy.setCurrentTime(time);
-    worldRenderer.editorRenderer.update(null, time);
-    onGetCurrentTime();
+    //onGetCurrentTime();
 }
 
 function onGetCurrentTime() {
@@ -420,6 +421,18 @@ function onAddShape(data) {
     worldRenderer.editorRenderer.createShape(vertices, data.id);
 }
 
+function onEditShape(data) {
+    worldRenderer.editorRenderer.editShape(data.id, data.params);
+}
+
+function onRemoveShape(data) {
+    worldRenderer.editorRenderer.removeShape(data.id);
+}
+
+function onClearShapes() {
+    worldRenderer.editorRenderer.clearShapes();
+}
+
 function onAddShapeKeyframe(data) {
 
     var vertices = data.params.vertices;
@@ -431,7 +444,7 @@ function onAddShapeKeyframe(data) {
         })
     }
 
-    console.log('Adding shape ' + data.id, frame, vertices);
+    console.log('Adding shape keyframe for ' + data.id + ' at ' + frame);
 
     worldRenderer.editorRenderer.addShapeKeyframe(data.id, frame, vertices);
 
@@ -459,17 +472,6 @@ function onRemoveShapeKeyframe(data) {
     worldRenderer.editorRenderer.removeShapeKeyframe(data.id, frame);
 }
 
-function onEditShape(data) {
-    worldRenderer.editorRenderer.editShape(data.id);
-}
-
-function onRemoveShape(data) {
-    worldRenderer.editorRenderer.removeShape(data.id);
-}
-
-function onClearShapes() {
-    worldRenderer.editorRenderer.clearShapes();
-}
 
 function onSeek(data) {
     if (!worldRenderer.videoProxy) {
