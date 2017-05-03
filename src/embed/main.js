@@ -431,7 +431,7 @@ function onAddShapeKeyframe(data) {
         })
     }
 
-    console.log('Adding shape ' + data.id, frame, vertices)
+    console.log('Adding shape ' + data.id, frame, vertices);
 
     worldRenderer.editorRenderer.addShapeKeyframe(data.id, frame, vertices);
 

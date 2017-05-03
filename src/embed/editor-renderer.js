@@ -461,11 +461,11 @@ EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, verti
         return;
     }
 
-    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
-        if(this.shapesKeyframes[id][i].frame === keyframe) {
-            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[id][i].vertices, 'now', vertices);
-            this.shapesKeyframes[id][i].vertices.length = 0;
-            this.shapesKeyframes[id][i].vertices = vertices;
+    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
+        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
+            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
+            this.shapesKeyframes[shape_id][i].vertices.length = 0;
+            this.shapesKeyframes[shape_id][i].vertices = vertices;
             return;
         }
     }
@@ -480,10 +480,10 @@ EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
         return;
     }
 
-    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
-        if(this.shapesKeyframes[id][i].frame === keyframe) {
+    for(var i = 0; i < this.shapesKeyframes[shape_id].length; i++) {
+        if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
             console.log('Deleting keyframe ' + keyframe + ' for shape ' + shape_id);
-            this.shapesKeyframes[id].splice(i, 1);
+            this.shapesKeyframes[shape_id].splice(i, 1);
             return;
         }
     }
