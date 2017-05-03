@@ -301,17 +301,26 @@ Player.prototype.addShape = function (shapeId, params) {
     this.sender.send({type: Message.ADD_SHAPE, data: {id: shapeId, params: params}});
 };
 
-Player.prototype.addShapeKeyframe = function (shapeId, frame, params) {
-    params.frame = frame;
-    this.sender.send({type: Message.ADD_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
-};
-
 Player.prototype.editShape = function (shapeId, params) {
     this.sender.send({type: Message.EDIT_SHAPE, data: {id: shapeId, params: params}});
 };
 
 Player.prototype.removeShape = function (shapeId) {
     this.sender.send({type: Message.REMOVE_SHAPE, data: {id: shapeId}});
+};
+
+
+Player.prototype.addShapeKeyframe = function (shapeId, frame, params) {
+    params.frame = frame;
+    this.sender.send({type: Message.ADD_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+};
+Player.prototype.editShapeKeyframe = function (shapeId, frame, params) {
+    params.frame = frame;
+    this.sender.send({type: Message.EDIT_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+};
+Player.prototype.removeShapeKeyframe = function (shapeId, frame, params) {
+    params.frame = frame;
+    this.sender.send({type: Message.REMOVE_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
 };
 
 Player.prototype.seek = function (frame) {

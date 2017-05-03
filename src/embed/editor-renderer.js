@@ -454,6 +454,41 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
 
 };
 
+EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, vertices) {
+
+    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + shape_id);
+        return;
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
+        if(this.shapesKeyframes[id][i].frame === keyframe) {
+            console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[id][i].vertices, 'now', vertices);
+            this.shapesKeyframes[id][i].vertices.length = 0;
+            this.shapesKeyframes[id][i].vertices = vertices;
+            return;
+        }
+    }
+
+    console.warn('Cannot update shape, no keyframe or shape found at ' + keyframe + ' for shape with id ' + shape_id);
+};
+
+EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
+
+    if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
+        console.warn('Cannot update shape, no shape found:' + shape_id);
+        return;
+    }
+
+    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
+        if(this.shapesKeyframes[id][i].frame === keyframe) {
+            console.log('Deleting keyframe ' + keyframe + ' for shape ' + shape_id);
+            this.shapesKeyframes[id].splice(i, 1);
+            return;
+        }
+    }
+
+};
 
 /**
  * Creates a shape form a set of vertices (points)
@@ -501,21 +536,7 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
  * @param params
  */
 EditorRenderer.prototype.editShape = function (id, params) {
-
-    if(typeof this.shapesKeyframes[id] === 'undefined') {
-        console.warn('Cannot update shape, no shape found:' + id);
-    }
-
-    for(var i = 0; i < this.shapesKeyframes[id].length; i++) {
-        if(this.shapesKeyframes[id][i].frame === params.keyframe) {
-            console.log('Updating shape ' + id + ' at keyframe ' + params.keyframe + ' was ', this.shapesKeyframes[id][i].vertices, 'now', params.vertices);
-            this.shapesKeyframes[id][i].vertices.length = 0;
-            this.shapesKeyframes[id][i].vertices = params.vertices;
-            return;
-        }
-    }
-
-    console.warn('Cannot update shape, no keyframe or shape found at ' + params.keyframe + ' for shape with id ' + id);
+    console.warn('editShape: TODO not implemented yet', id, params);
 };
 
 EditorRenderer.prototype.removeShape = function (id) {

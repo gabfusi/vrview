@@ -41,6 +41,8 @@ receiver.on(Message.START_DRAW, onStartDraw);
 receiver.on(Message.END_DRAW, onEndDraw);
 receiver.on(Message.ADD_SHAPE, onAddShape);
 receiver.on(Message.ADD_SHAPE_KEYFRAME, onAddShapeKeyframe);
+receiver.on(Message.EDIT_SHAPE_KEYFRAME, onEditShapeKeyframe);
+receiver.on(Message.REMOVE_SHAPE_KEYFRAME, onRemoveShapeKeyframe);
 receiver.on(Message.EDIT_SHAPE, onEditShape);
 receiver.on(Message.REMOVE_SHAPE, onRemoveShape);
 receiver.on(Message.CLEAR_SHAPES, onClearShapes);
@@ -429,14 +431,36 @@ function onAddShapeKeyframe(data) {
         })
     }
 
-    console.log(data.id, frame, vertices)
+    console.log('Adding shape ' + data.id, frame, vertices)
 
     worldRenderer.editorRenderer.addShapeKeyframe(data.id, frame, vertices);
 
 }
 
+function onEditShapeKeyframe(data) {
+
+    var vertices = data.params.vertices;
+    var frame = data.params.frame;
+
+    if (vertices.length && !(vertices[0] instanceof THREE.Vector3)) {
+        vertices = vertices.map(function (p) {
+            return new THREE.Vector3(p.x, p.y, p.z);
+        })
+    }
+
+    console.log('Updating shape ' + data.id, frame, vertices);
+
+    worldRenderer.editorRenderer.editShapeKeyframe(data.id, frame, vertices);
+}
+
+
+function onRemoveShapeKeyframe(data) {
+    var frame = data.params.frame;
+    worldRenderer.editorRenderer.removeShapeKeyframe(data.id, frame);
+}
+
 function onEditShape(data) {
-    worldRenderer.editorRenderer.editShape(data.id, data.params);
+    worldRenderer.editorRenderer.editShape(data.id);
 }
 
 function onRemoveShape(data) {

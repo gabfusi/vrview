@@ -52,15 +52,17 @@ IFrameMessageReceiver.prototype.onMessage_ = function(event) {
     case Message.ADD_HOTSPOT:
     case Message.PLAY:
     case Message.PAUSE:
-      case Message.GET_POSITION:
-      case Message.START_DRAW:
-      case Message.END_DRAW:
-      case Message.ADD_SHAPE:
-      case Message.ADD_SHAPE_KEYFRAME:
-      case Message.EDIT_SHAPE:
-      case Message.REMOVE_SHAPE:
-      case Message.SET_CURRENT_TIME:
-      case Message.SEEK:
+    case Message.GET_POSITION:
+    case Message.START_DRAW:
+    case Message.END_DRAW:
+    case Message.ADD_SHAPE:
+    case Message.EDIT_SHAPE:
+    case Message.REMOVE_SHAPE:
+    case Message.ADD_SHAPE_KEYFRAME:
+    case Message.EDIT_SHAPE_KEYFRAME:
+    case Message.REMOVE_SHAPE_KEYFRAME:
+    case Message.SET_CURRENT_TIME:
+    case Message.SEEK:
       this.emit(type, data);
       break;
     default:
