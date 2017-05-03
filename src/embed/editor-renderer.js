@@ -64,6 +64,7 @@ EditorRenderer.prototype.update = function (time, videoTime) {
 
     // on each video frame
     if(videoTime && this.videoTime !== videoTime.currentTime) {
+        this.videoTime = videoTime.currentTime;
 
         var shape,
             shapePoints,
@@ -100,7 +101,6 @@ EditorRenderer.prototype.update = function (time, videoTime) {
             this.updateShapeFill_(shape, false);
         }
 
-        this.videoTime = videoTime.currentTime;
     }
 
 };
