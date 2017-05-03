@@ -142,20 +142,17 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
 
         if(startFrame <= frame && frame <= endFrame) {
 
-            if(typeof shapeKeyframes[i].quaternions === 'undefined') {
+            // calculate shape transformations
+            for(var j = 0, ll = shapeKeyframes[i].vertices.length; j < ll; j++) {
 
-                // calculate shape transformations
-                for(var j = 0, ll = shapeKeyframes[i].vertices.length; j < ll; j++) {
+                if(typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
 
-                    if(typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
+                    Q1 = shapeKeyframes[i].vertices[j];
+                    Q2 = shapeKeyframes[i+1].vertices[j];
 
-                        Q1 = shapeKeyframes[i].vertices[j];
-                        Q2 = shapeKeyframes[i+1].vertices[j];
-
-                        shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
-                    }
-
+                    shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
                 }
+
             }
 
             // return animation percentage [0, 1]
@@ -474,7 +471,9 @@ EditorRenderer.prototype.editShapeKeyframe = function (shape_id, keyframe, verti
         if(this.shapesKeyframes[shape_id][i].frame === keyframe) {
             console.log('Updating shape ' + shape_id + ' at keyframe ' + keyframe + ' was ', this.shapesKeyframes[shape_id][i].vertices, 'now', vertices);
             this.shapesKeyframes[shape_id][i].vertices.length = 0;
-            delete this.shapesKeyframes[shape_id][i].quaternion;
+            for(var j = 0; j < this.shapesKeyframes[shape_id][i].vertices.length; j++) {
+                delete this.shapesKeyframes[shape_id][i].vertices[j].quaternion;
+            }
             this.shapesKeyframes[shape_id][i].vertices = vertices;
             return;
         }
@@ -524,7 +523,6 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
     // wrapper object
     var shape = new THREE.Object3D();
     shape.name = 'shape';
-    shape.add(fill);
 
     // draw handles
     for(var i = 0; i < vertices.length; i++) {
@@ -532,6 +530,8 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
         shape.add(handle);
     }
 
+
+    shape.add(fill);
     //shape.add(handles);
     //shape.add(borders);
 
