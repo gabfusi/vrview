@@ -3,6 +3,7 @@
 var EventEmitter = require('eventemitter3');
 var TWEEN = require('tween.js');
 var Util = require('../util');
+var earcut = require('earcut');
 
 // Constants for the active/inactive animation.
 var INACTIVE_COLOR = new THREE.Color(1, 1, 1);
@@ -62,6 +63,10 @@ function EditorRenderer(worldRenderer) {
 
 EditorRenderer.prototype = new EventEmitter();
 
+/**
+ * Update shapes, called on render and executed on videoTime change
+ * @param currentTime
+ */
 EditorRenderer.prototype.update = function (currentTime) {
 
     if(!currentTime) {
@@ -606,16 +611,40 @@ EditorRenderer.prototype.updateShapeFill_ = function(shape, isShapeSelected) {
  */
 EditorRenderer.prototype.createShapeFill_ = function(vertices, isShapeSelected) {
 
+    var fill;
     var fillGeometry = new THREE.Geometry();
     var fillMaterial = new THREE.MeshBasicMaterial({ color: isShapeSelected ? ACTIVE_COLOR : 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.6});
     var faces = [];
+    var flattenVertices = [];
+    var triangles;
+    var i, l;
+
+    for(i = 0, l = vertices.length; i < l; i++) {
+        flattenVertices.push(vertices[i].x, vertices[i].y, vertices[i].z);
+    }
+
+    triangles = earcut(flattenVertices, null, 3);
+
+    for(i = 0, l = triangles.length; i < l; i += 3) {
+        if(i % 3 === 0) {
+            faces.push(new THREE.Face3( triangles[i], triangles[i+1], triangles[i+2] ));
+        }
+    }
+
+    //var deviation = earcut.deviation(flattenVertices, null, 3, triangles);
+    //if(deviation !== 0) {
+        // console.warn('Triangulation not so correct... ' + deviation)
+    //}
+
+    /*
     var triangles = THREE.ShapeUtils.triangulateShape (vertices, []);
     for(var i = 0; i < triangles.length; i++){
         faces.push(new THREE.Face3( triangles[i][0], triangles[i][1], triangles[i][2] ));
-    }
+    }*/
+
     fillGeometry.faces = faces;
     fillGeometry.vertices = vertices;
-    var fill = new THREE.Mesh(fillGeometry, fillMaterial);
+    fill = new THREE.Mesh(fillGeometry, fillMaterial);
     fill.name = 'fill';
 
     return fill;
@@ -790,7 +819,13 @@ EditorRenderer.prototype.removeShapeKeyframe = function (shape_id, keyframe) {
 
 };
 
-
+/**
+ *
+ * @param shape_id
+ * @param keyframe
+ * @returns {*}
+ * @private
+ */
 EditorRenderer.prototype.getShapeKeyframeIndex_ = function (shape_id, keyframe) {
 
     if(typeof this.shapesKeyframes[shape_id] === 'undefined') {
@@ -848,12 +883,12 @@ EditorRenderer.prototype.getIntersectingShapeOrHandles_ = function () {
     if(intersectingHandles.length) {
         sorted = intersectingHandles.sort(function(a, b){ return a.distance - b.distance; });
         console.log(sorted);
-        return sorted[0].object;
+        return sorted[0].object.visible ? sorted[0].object : false;
     }
     else if(intersectingShapes.length) {
         sorted = intersectingShapes.sort(function(a, b){ return a.distance - b.distance; });
-        console.log(sorted);
-        return sorted[0].object.parent;
+        console.log(sorted[0].object, sorted);
+        return sorted[0].object.parent.visible ? sorted[0].object.parent : false;
     }
 };
 
@@ -936,5 +971,8 @@ EditorRenderer.prototype.isPointNearTo_ = function (p1, p2) {
 
     return (Math.pow(p1.x-p2.x, 2) + Math.pow(p1.y-p2.y, 2) + Math.pow(p1.z-p2.z, 2)) < Math.pow(gutter, 2)
 };
+
+
+
 
 module.exports = EditorRenderer;
