@@ -396,9 +396,36 @@ EditorRenderer.prototype.blurShape_ = function(shape_id) {
     var shape = this.shapes[shape_id];
     var outer = shape.getObjectByName('fill');
 
-    this.tween = new TWEEN.Tween(outer.material.color).to(INACTIVE_COLOR, ACTIVE_DURATION)
+    var shapeBg = typeof this.shapesInfo[shape_id] !== 'undefined' ? this.shapesInfo[shape_id].background_color : INACTIVE_COLOR;
+
+    console.log(shapeBg);
+
+    this.tween = new TWEEN.Tween(outer.material.color).to(shapeBg, ACTIVE_DURATION)
         .start();
 };
+
+function parseCSSColor(rgba){
+    if(!rgba) return;
+
+    var ret = {
+        color: INACTIVE_COLOR,
+        opacity: 1
+    };
+
+    if(rgba.indexOf('#') === 0) {
+        ret.color = rgba; // hex
+    } else {
+
+        var rgb = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/i);
+
+        if(rgb) {
+            ret.color = "rgb(" + parseInt(rgb[1],10) + "," + parseInt(rgb[2],10) + "," +  parseInt(rgb[3],10) + ")";
+            ret.opacity = typeof rgb[4] !== 'undefined' ? parseFloat(rgb[1]) : 1;
+        }
+    }
+
+    return ret;
+}
 
 /**
  * Add a point to the current drawing shape
@@ -466,7 +493,7 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
  */
 EditorRenderer.prototype.createShape = function (vertices, id) {
 
-    var shape = this.createShape_(vertices);
+    var shape = this.createShape_(vertices, id);
     shape.name = id || shape.uuid;
 
     // add vertices to shapes keyframes
@@ -494,7 +521,7 @@ EditorRenderer.prototype.createShape = function (vertices, id) {
  * @param vertices
  * @returns {SEA3D.Object3D|THREE.SEA3D.Object3D|*|Object3D|W|x}
  */
-EditorRenderer.prototype.createShape_ = function (vertices) {
+EditorRenderer.prototype.createShape_ = function (vertices, shapeId) {
 
     //var shapeGeometry = new THREE.Geometry();
     //shapeGeometry.vertices = points;
@@ -504,7 +531,7 @@ EditorRenderer.prototype.createShape_ = function (vertices) {
     //borders.name = 'borders';
 
     // draw fill
-    var fill = this.createShapeFill_(vertices);
+    var fill = this.createShapeFill_(vertices, false, shapeId);
 
     // handles wrapper object
     //var handles = new THREE.Object3D();
@@ -544,11 +571,19 @@ EditorRenderer.prototype.editShape = function (id, params) {
 
     this.shapesInfo[id] = null;
 
+    var bg = parseCSSColor(params.background_color);
+
     this.shapesInfo[id] = {
-        background_color: params.background_color || INACTIVE_COLOR,
+        background_color: INACTIVE_COLOR,
         start_frame: params.start_frame || 0,
         end_frame: params.end_frame || 60
     };
+
+    if(bg) {
+        this.shapesInfo[id].background_color = new THREE.Color(bg.color);
+        this.shapesInfo[id].opacity = bg.opacity;
+    }
+
 };
 
 /**
@@ -596,7 +631,7 @@ EditorRenderer.prototype.updateShapeFill_ = function(shape, isShapeSelected) {
         }
     }
 
-    var newFill = this.createShapeFill_(vertices, isShapeSelected);
+    var newFill = this.createShapeFill_(vertices, isShapeSelected, shape.name);
 
     shape.remove(shape.getObjectByName('fill'));
     shape.add(newFill);
@@ -609,11 +644,19 @@ EditorRenderer.prototype.updateShapeFill_ = function(shape, isShapeSelected) {
  * @returns {THREE.SEA3D.Mesh|Raycaster.params.Mesh|{}|SEA3D.Mesh|Jb.params.Mesh|pe.params.Mesh|*}
  * @private
  */
-EditorRenderer.prototype.createShapeFill_ = function(vertices, isShapeSelected) {
+EditorRenderer.prototype.createShapeFill_ = function(vertices, isShapeSelected, shapeId) {
+
+    console.log(shapeId, typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId] : false)
 
     var fill;
     var fillGeometry = new THREE.Geometry();
-    var fillMaterial = new THREE.MeshBasicMaterial({ color: isShapeSelected ? ACTIVE_COLOR : 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.6});
+    var fillMaterial = new THREE.MeshBasicMaterial({
+        color: isShapeSelected ? ACTIVE_COLOR :
+            (typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId].background_color : 0xffffff),
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.6
+    });
     var faces = [];
     var flattenVertices = [];
     var triangles;
