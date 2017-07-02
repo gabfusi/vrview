@@ -66,7 +66,7 @@ WorldRenderer.prototype.render = function (time) {
     if (!this.editorRenderer.isDrawing()) {
         this.controls.update();
     }
-    this.hotspotRenderer.update(this.camera);
+    // this.hotspotRenderer.update(this.camera);
     TWEEN.update(time);
     this.effect.render(this.scene, this.camera);
     if(this.videoProxy) {
@@ -164,6 +164,7 @@ WorldRenderer.prototype.setScene = function (scene) {
     }
 
     this.sceneInfo = scene;
+    this.editorRenderer.setEditorMode(this.sceneInfo.editorMode);
     if (Util.isDebug()) {
         console.log('Loaded scene', scene);
     }

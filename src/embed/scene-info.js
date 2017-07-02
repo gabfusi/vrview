@@ -25,6 +25,7 @@ var CAMEL_TO_UNDERSCORE = {
     isDebug: 'is_debug',
     isVROff: 'is_vr_off',
     isAutopanOff: 'is_autopan_off',
+    editorMode: 'editor_mode'
 };
 
 /**
@@ -38,6 +39,7 @@ function SceneInfo(opt_params) {
     this.video = params.video;
     this.defaultYaw = THREE.Math.degToRad(params.defaultYaw || 0);
 
+    this.editorMode = Util.parseBoolean(params.editorMode);
     this.isStereo = Util.parseBoolean(params.isStereo);
     this.isYawOnly = Util.parseBoolean(params.isYawOnly);
     this.isDebug = Util.parseBoolean(params.isDebug);

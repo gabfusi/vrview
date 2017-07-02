@@ -16,7 +16,7 @@ function EditorRenderer(worldRenderer) {
     this.scene = worldRenderer.scene;
 
     // if player is in editor mode
-    this.editorMode = true;
+    this.editorMode = false;
     // if draw shape tool is active
     this.toolActive = false;
     // if user is currently drawing a shape
@@ -62,6 +62,10 @@ function EditorRenderer(worldRenderer) {
 }
 
 EditorRenderer.prototype = new EventEmitter();
+
+EditorRenderer.prototype.setEditorMode = function (bool) {
+    this.editorMode = bool;
+};
 
 /**
  * Update shapes, called on render and executed on videoTime change
@@ -154,23 +158,24 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
         relativeFrame,
         Q1, Q2;
 
-    if(!shapeKeyframes) {
-        return false;
-    }
-
     // relative frame calc
     firstFrame = this.shapesInfo[shape_id].start_frame;
     lastFrame = this.shapesInfo[shape_id].end_frame;
     relativeFrame = frame - firstFrame;
 
-    if(shapeKeyframes.length < 2) {
-        // don't trasform if there is only 1 keyframe
+    if(frame > lastFrame || frame < firstFrame) {
+        // hide after shape end keyframe
+        return -1;
+    }
+
+    // if this shape doesn't have keyframes
+    if(!shapeKeyframes) {
         return false;
     }
 
-    else if(frame > lastFrame || frame < firstFrame) {
-        // hide after shape end keyframe
-        return -1;
+    if(shapeKeyframes.length < 2) {
+        // don't trasform if there is only 1 keyframe
+        return false;
     }
 
     // get rotation quaternions
@@ -210,7 +215,7 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function(shape_id, frame
         }
     }
 
-    console.warn('Frame outside shape time frame, TODO hide shape...', startFrame, relativeFrame, endFrame);
+    // console.warn('Frame outside shape time frame, hide shape...', startFrame, relativeFrame, endFrame);
     return false;
 
 };
@@ -593,7 +598,6 @@ EditorRenderer.prototype.editShape = function (id, params) {
 EditorRenderer.prototype.removeShape = function (id) {
     // If there's no shape with this ID, fail.
     if (!this.shapes[id]) {
-        // TODO: Proper error reporting.
         console.error('Attempt to remove non-existing shape with id %s.', id);
         return;
     }
@@ -641,12 +645,13 @@ EditorRenderer.prototype.updateShapeFill_ = function(shape, isShapeSelected) {
  * Creates a Mesh between given points
  * @param vertices
  * @param isShapeSelected
+ * @param shapeId
  * @returns {THREE.SEA3D.Mesh|Raycaster.params.Mesh|{}|SEA3D.Mesh|Jb.params.Mesh|pe.params.Mesh|*}
  * @private
  */
 EditorRenderer.prototype.createShapeFill_ = function(vertices, isShapeSelected, shapeId) {
 
-    console.log(shapeId, typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId] : false)
+    // console.log(shapeId, typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId] : false)
 
     var fill;
     var fillGeometry = new THREE.Geometry();
@@ -673,17 +678,6 @@ EditorRenderer.prototype.createShapeFill_ = function(vertices, isShapeSelected, 
             faces.push(new THREE.Face3( triangles[i], triangles[i+1], triangles[i+2] ));
         }
     }
-
-    //var deviation = earcut.deviation(flattenVertices, null, 3, triangles);
-    //if(deviation !== 0) {
-        // console.warn('Triangulation not so correct... ' + deviation)
-    //}
-
-    /*
-    var triangles = THREE.ShapeUtils.triangulateShape (vertices, []);
-    for(var i = 0; i < triangles.length; i++){
-        faces.push(new THREE.Face3( triangles[i][0], triangles[i][1], triangles[i][2] ));
-    }*/
 
     fillGeometry.faces = faces;
     fillGeometry.vertices = vertices;
@@ -748,6 +742,7 @@ EditorRenderer.prototype.createHandle_ = function (point) {
     var handle = new THREE.Mesh(handleGeometry, handleMaterial);
     handle.position.set(point.x, point.y, point.z);
     handle.name = 'handle';
+    handle.visible = this.editorMode;
     return handle;
 };
 
