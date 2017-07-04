@@ -58,12 +58,6 @@ iframe {
     background: url('img/ic_play_arrow_black_24dp.svg');
   }
 
-#time {
-  float: left;
-  height: 19px;
-  padding-top: 5px;
-}
-
 #togglemute {
   float: right;
   background: url('img/ic_volume_up_black_24dp.svg');
