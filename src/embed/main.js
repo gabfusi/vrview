@@ -92,7 +92,6 @@ function onLoad() {
     requestAnimationFrame(loop);
 }
 
-
 function onVideoTap() {
     worldRenderer.videoProxy.play();
     hidePlayButton();
@@ -355,10 +354,12 @@ function onStartDraw() {
     // activate draw tool
     worldRenderer.editorRenderer.startDraw();
 }
+
 function onEndDraw() {
     // deactivate draw tool
     worldRenderer.editorRenderer.endDraw();
 }
+
 function onEditorShapeDrawn(shape) {
     // on shape drawn
     Util.sendParentMessage({
@@ -373,6 +374,7 @@ function onEditorShapeDrawn(shape) {
         }
     });
 }
+
 function onEditorShapeTransformed(shape) {
     // on shape drawn
     Util.sendParentMessage({
@@ -387,7 +389,6 @@ function onEditorShapeTransformed(shape) {
         }
     });
 }
-
 
 function onEditorShapeSelected(shape) {
     // on shape selected
@@ -465,7 +466,6 @@ function onEditShapeKeyframe(data) {
 
     worldRenderer.editorRenderer.editShapeKeyframe(data.id, frame, vertices);
 }
-
 
 function onRemoveShapeKeyframe(data) {
     var frame = data.params.frame;

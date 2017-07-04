@@ -31,33 +31,33 @@ var FAKE_FULLSCREEN_CLASS = 'vrview-fake-fullscreen';
  *    click (id): When a hotspot is clicked.
  */
 function Player(selector, contentInfo, options) {
-    // custom global options
-    this.autoplay = options && typeof options.autoplay !== 'undefined' ? !!options.autoplay : true;
-    this.assetsUrl = options && typeof options.assetsUrl !== 'undefined' ? options.assetsUrl : false;
+  // custom global options
+  this.autoplay = options && typeof options.autoplay !== 'undefined' ? !!options.autoplay : true;
+  this.assetsUrl = options && typeof options.assetsUrl !== 'undefined' ? options.assetsUrl : false;
 
-    contentInfo.autoplay = this.autoplay;
+  contentInfo.autoplay = this.autoplay;
 
-    // Create a VR View iframe depending on the parameters.
-    var iframe = this.createIframe_(contentInfo);
-    this.iframe = iframe;
+  // Create a VR View iframe depending on the parameters.
+  var iframe = this.createIframe_(contentInfo);
+  this.iframe = iframe;
 
-    var parentEl = document.querySelector(selector);
-    parentEl.appendChild(iframe);
+  var parentEl = document.querySelector(selector);
+  parentEl.appendChild(iframe);
 
-    // Make a sender as well, for relying commands to the child IFrame.
-    this.sender = new IFrameMessageSender(iframe);
+  // Make a sender as well, for relying commands to the child IFrame.
+  this.sender = new IFrameMessageSender(iframe);
 
-    // Listen to messages from the IFrame.
-    window.addEventListener('message', this.onMessage_.bind(this), false);
+  // Listen to messages from the IFrame.
+  window.addEventListener('message', this.onMessage_.bind(this), false);
 
-    // Expose a public .isPaused attribute.
-    this.isPaused = false;
-    this.time_ = {currentTime: 0, duration: 0};
-    this.volume_ = 1;
+  // Expose a public .isPaused attribute.
+  this.isPaused = false;
+  this.time_ = {currentTime: 0, duration: 0};
+  this.volume_ = 1;
 
-    if (Util.isIOS()) {
-        this.injectFullscreenStylesheet_();
-    }
+  if (Util.isIOS()) {
+    this.injectFullscreenStylesheet_();
+  }
 }
 Player.prototype = new EventEmitter();
 
@@ -72,46 +72,46 @@ Player.prototype = new EventEmitter();
  * @param hotspotId {String} The ID of the hotspot.
  */
 Player.prototype.addHotspot = function (hotspotId, params) {
-    // TODO: Add validation to params.
-    var data = {
-        pitch: params.pitch,
-        yaw: params.yaw,
-        radius: params.radius,
-        distance: params.distance,
-        custom: params.custom || null,
-        id: hotspotId
-    };
-    this.sender.send({type: Message.ADD_HOTSPOT, data: data});
+  // TODO: Add validation to params.
+  var data = {
+    pitch: params.pitch,
+    yaw: params.yaw,
+    radius: params.radius,
+    distance: params.distance,
+    custom: params.custom || null,
+    id: hotspotId
+  };
+  this.sender.send({type: Message.ADD_HOTSPOT, data: data});
 };
 
 Player.prototype.play = function () {
-    this.sender.send({type: Message.PLAY});
+  this.sender.send({type: Message.PLAY});
 };
 
 Player.prototype.pause = function () {
-    this.sender.send({type: Message.PAUSE});
+  this.sender.send({type: Message.PAUSE});
 };
 
 Player.prototype.setContent = function (contentInfo) {
-    this.absolutifyPaths_(contentInfo);
-    var data = {
-        contentInfo: contentInfo
-    };
-    this.sender.send({type: Message.SET_CONTENT, data: data});
+  this.absolutifyPaths_(contentInfo);
+  var data = {
+    contentInfo: contentInfo
+  };
+  this.sender.send({type: Message.SET_CONTENT, data: data});
 };
 
 /**
  * Sets the software volume of the video. 0 is mute, 1 is max.
  */
 Player.prototype.setVolume = function (volumeLevel) {
-    var data = {
-        volumeLevel: volumeLevel
-    };
-    this.sender.send({type: Message.SET_VOLUME, data: data});
+  var data = {
+    volumeLevel: volumeLevel
+  };
+  this.sender.send({type: Message.SET_VOLUME, data: data});
 };
 
 Player.prototype.getVolume = function () {
-    return this.volume_;
+  return this.volume_;
 };
 
 /**
@@ -119,18 +119,18 @@ Player.prototype.getVolume = function () {
  * @param {Number} time
  */
 Player.prototype.setCurrentTime = function (time) {
-    var data = {
-        currentTime: time
-    };
-    this.sender.send({type: Message.SET_CURRENT_TIME, data: data});
+  var data = {
+    currentTime: time
+  };
+  this.sender.send({type: Message.SET_CURRENT_TIME, data: data});
 };
 
 Player.prototype.getCurrentTime = function () {
-    return this.time_.currentTime;
+  return this.time_.currentTime;
 };
 
 Player.prototype.getDuration = function () {
-    return this.time_.duration;
+  return this.time_.duration;
 };
 
 /**
@@ -139,81 +139,81 @@ Player.prototype.getDuration = function () {
  * @return {IFrameElement} The iframe.
  */
 Player.prototype.createIframe_ = function (contentInfo) {
-    this.absolutifyPaths_(contentInfo);
+  this.absolutifyPaths_(contentInfo);
 
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('allowfullscreen', true);
-    iframe.setAttribute('scrolling', 'no');
-    iframe.style.border = 0;
+  var iframe = document.createElement('iframe');
+  iframe.setAttribute('allowfullscreen', true);
+  iframe.setAttribute('scrolling', 'no');
+  iframe.style.border = 0;
 
-    // Handle iframe size if width and height are specified.
-    if (contentInfo.hasOwnProperty('width')) {
-        iframe.setAttribute('width', contentInfo.width);
-        delete contentInfo.width;
-    }
-    if (contentInfo.hasOwnProperty('height')) {
-        iframe.setAttribute('height', contentInfo.height);
-        delete contentInfo.height;
-    }
+  // Handle iframe size if width and height are specified.
+  if (contentInfo.hasOwnProperty('width')) {
+    iframe.setAttribute('width', contentInfo.width);
+    delete contentInfo.width;
+  }
+  if (contentInfo.hasOwnProperty('height')) {
+    iframe.setAttribute('height', contentInfo.height);
+    delete contentInfo.height;
+  }
 
-    var url = this.getEmbedUrl_() + Util.createGetParams(contentInfo);
-    iframe.src = url;
+  var url = this.getEmbedUrl_() + Util.createGetParams(contentInfo);
+  iframe.src = url;
 
-    return iframe;
+  return iframe;
 };
 
 Player.prototype.onMessage_ = function (event) {
-    var message = event.data;
-    if (!message || !message.type) {
-        console.warn('Received message with no type.');
-        return;
-    }
-    var type = message.type.toLowerCase();
-    var data = message.data;
+  var message = event.data;
+  if (!message || !message.type) {
+    console.warn('Received message with no type.');
+    return;
+  }
+  var type = message.type.toLowerCase();
+  var data = message.data;
 
-    switch (type) {
-        case 'ready':
-        case 'modechange':
-        case 'error':
-        case 'click':
-        case 'getposition':
-        case 'startdraw':
-        case 'enddraw':
-        case 'shapetransformed':
-        case 'shapeselected':
-        case 'shapeunselected':
-        case 'ended':
-            if (type === 'ready') {
-                this.time_.duration = data.duration;
-            }
-            this.emit(type, data);
-            break;
-        case 'paused':
-            this.isPaused = data;
-            if (this.isPaused) {
-                this.emit('pause', data);
-            } else {
-                this.emit('play', data);
-            }
-            break;
-        case 'volumechange':
-            this.volume_ = data;
-            this.emit('timeupdate', data);
-            break;
-        case 'timeupdate':
-            this.time_ = data;
-            this.emit('timeupdate', data);
-            break;
-        case 'enter-fullscreen':
-        case 'enter-vr':
-            this.setFakeFullscreen_(true);
-            break;
-        case 'exit-fullscreen':
-            this.setFakeFullscreen_(false);
-            break;
-        default:
-            console.warn('Got unknown message of type %s from %s', message.type, message.origin);
-    }
+  switch (type) {
+    case 'ready':
+    case 'modechange':
+    case 'error':
+    case 'click':
+    case 'getposition':
+    case 'startdraw':
+    case 'enddraw':
+    case 'shapetransformed':
+    case 'shapeselected':
+    case 'shapeunselected':
+    case 'ended':
+      if (type === 'ready') {
+        this.time_.duration = data.duration;
+      }
+      this.emit(type, data);
+      break;
+    case 'paused':
+      this.isPaused = data;
+      if (this.isPaused) {
+        this.emit('pause', data);
+      } else {
+        this.emit('play', data);
+      }
+      break;
+    case 'volumechange':
+      this.volume_ = data;
+      this.emit('timeupdate', data);
+      break;
+    case 'timeupdate':
+      this.time_ = data;
+      this.emit('timeupdate', data);
+      break;
+    case 'enter-fullscreen':
+    case 'enter-vr':
+      this.setFakeFullscreen_(true);
+      break;
+    case 'exit-fullscreen':
+      this.setFakeFullscreen_(false);
+      break;
+    default:
+      console.warn('Got unknown message of type %s from %s', message.type, message.origin);
+  }
 };
 
 /**
@@ -224,114 +224,114 @@ Player.prototype.onMessage_ = function (event) {
  * CSS. To do this cleanly, we also inject a stylesheet.
  */
 Player.prototype.setFakeFullscreen_ = function (isFullscreen) {
-    if (isFullscreen) {
-        this.iframe.classList.add(FAKE_FULLSCREEN_CLASS);
-    } else {
-        this.iframe.classList.remove(FAKE_FULLSCREEN_CLASS);
-    }
+  if (isFullscreen) {
+    this.iframe.classList.add(FAKE_FULLSCREEN_CLASS);
+  } else {
+    this.iframe.classList.remove(FAKE_FULLSCREEN_CLASS);
+  }
 };
 
 Player.prototype.injectFullscreenStylesheet_ = function () {
-    var styleString = [
-        'iframe.' + FAKE_FULLSCREEN_CLASS,
-        '{',
-        'position: fixed !important;',
-        'display: block !important;',
-        'z-index: 9999999999 !important;',
-        'top: 0 !important;',
-        'left: 0 !important;',
-        'width: 100% !important;',
-        'height: 100% !important;',
-        'margin: 0 !important;',
-        '}',
-    ].join('\n');
-    var style = document.createElement('style');
-    style.innerHTML = styleString;
-    document.body.appendChild(style);
+  var styleString = [
+    'iframe.' + FAKE_FULLSCREEN_CLASS,
+    '{',
+    'position: fixed !important;',
+    'display: block !important;',
+    'z-index: 9999999999 !important;',
+    'top: 0 !important;',
+    'left: 0 !important;',
+    'width: 100% !important;',
+    'height: 100% !important;',
+    'margin: 0 !important;',
+    '}',
+  ].join('\n');
+  var style = document.createElement('style');
+  style.innerHTML = styleString;
+  document.body.appendChild(style);
 };
 
 Player.prototype.getEmbedUrl_ = function () {
-    // Assume that the script is in $ROOT/build/something.js, and that the iframe
-    // HTML is in $ROOT/index.html.
-    //
-    // E.g: /vrview/2.0/build/vrview.min.js => /vrview/2.0/index.html.
-    var path = CURRENT_SCRIPT_SRC;
-    var split = path.split('/');
-    var rootSplit = split.slice(0, split.length - 2);
-    var rootPath = rootSplit.join('/');
-    return rootPath + '/index.html';
+  // Assume that the script is in $ROOT/build/something.js, and that the iframe
+  // HTML is in $ROOT/index.html.
+  //
+  // E.g: /vrview/2.0/build/vrview.min.js => /vrview/2.0/index.html.
+  var path = CURRENT_SCRIPT_SRC;
+  var split = path.split('/');
+  var rootSplit = split.slice(0, split.length - 2);
+  var rootPath = rootSplit.join('/');
+  return rootPath + '/index.html';
 };
 
 Player.prototype.getDirName_ = function () {
-    var path = window.location.pathname;
-    path = path.substring(0, path.lastIndexOf('/'));
-    return location.protocol + '//' + location.host + path;
+  var path = window.location.pathname;
+  path = path.substring(0, path.lastIndexOf('/'));
+  return location.protocol + '//' + location.host + path;
 };
 
 /**
  * Make all of the URLs inside contentInfo absolute instead of relative.
  */
 Player.prototype.absolutifyPaths_ = function (contentInfo) {
-    var dirName = this.assetsUrl || this.getDirName_();
-    var urlParams = ['image', 'preview', 'video'];
+  var dirName = this.assetsUrl || this.getDirName_();
+  var urlParams = ['image', 'preview', 'video'];
 
-    for (var i = 0; i < urlParams.length; i++) {
-        var name = urlParams[i];
-        var path = contentInfo[name];
-        if (path && Util.isPathAbsolute(path)) {
-            var absolute = Util.relativeToAbsolutePath(dirName, path);
-            contentInfo[name] = absolute;
-            //console.log('Converted to absolute: %s', absolute);
-        }
+  for (var i = 0; i < urlParams.length; i++) {
+    var name = urlParams[i];
+    var path = contentInfo[name];
+    if (path && Util.isPathAbsolute(path)) {
+      var absolute = Util.relativeToAbsolutePath(dirName, path);
+      contentInfo[name] = absolute;
+      //console.log('Converted to absolute: %s', absolute);
     }
+  }
 };
 
 Player.prototype.getPosition = function () {
-    this.sender.send({type: Message.GET_POSITION, data: {}});
+  this.sender.send({type: Message.GET_POSITION, data: {}});
 };
 
 Player.prototype.activateShapeTool = function () {
-    this.sender.send({type: Message.START_DRAW, data: {}});
+  this.sender.send({type: Message.START_DRAW, data: {}});
 };
 Player.prototype.deactivateShapeTool = function () {
-    this.sender.send({type: Message.END_DRAW, data: {}});
+  this.sender.send({type: Message.END_DRAW, data: {}});
 };
 
 Player.prototype.addShape = function (shapeId, params) {
-    this.sender.send({type: Message.ADD_SHAPE, data: {id: shapeId, params: params}});
+  this.sender.send({type: Message.ADD_SHAPE, data: {id: shapeId, params: params}});
 };
 
 Player.prototype.editShape = function (shapeId, params) {
-    this.sender.send({type: Message.EDIT_SHAPE, data: {id: shapeId, params: params}});
+  this.sender.send({type: Message.EDIT_SHAPE, data: {id: shapeId, params: params}});
 };
 
 Player.prototype.removeShape = function (shapeId) {
-    this.sender.send({type: Message.REMOVE_SHAPE, data: {id: shapeId}});
+  this.sender.send({type: Message.REMOVE_SHAPE, data: {id: shapeId}});
 };
 
 
 Player.prototype.addShapeKeyframe = function (shapeId, frame, params) {
-    params.frame = frame;
-    this.sender.send({type: Message.ADD_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+  params.frame = frame;
+  this.sender.send({type: Message.ADD_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
 };
 Player.prototype.editShapeKeyframe = function (shapeId, frame, params) {
-    params.frame = frame;
-    this.sender.send({type: Message.EDIT_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
+  params.frame = frame;
+  this.sender.send({type: Message.EDIT_SHAPE_KEYFRAME, data: {id: shapeId, params: params}});
 };
 Player.prototype.removeShapeKeyframe = function (shapeId, frame) {
-    this.sender.send({type: Message.REMOVE_SHAPE_KEYFRAME, data: {id: shapeId, params: { frame: frame }}});
+  this.sender.send({type: Message.REMOVE_SHAPE_KEYFRAME, data: {id: shapeId, params: {frame: frame}}});
 };
 
 Player.prototype.seek = function (frame) {
-    this.sender.send({type: Message.SEEK, data: {frame: frame}});
+  this.sender.send({type: Message.SEEK, data: {frame: frame}});
 };
 
 Player.prototype.clearShapes = function () {
-    this.sender.send({type: Message.CLEAR_SHAPES, data: {}});
+  this.sender.send({type: Message.CLEAR_SHAPES, data: {}});
 };
 
 Player.prototype.setAutoplay = function (bool) {
-    this.sender.send({type: Message.SET_AUTOPLAY, data: { autoplay: bool }});
+  this.sender.send({type: Message.SET_AUTOPLAY, data: {autoplay: bool}});
 };
 
 module.exports = Player;

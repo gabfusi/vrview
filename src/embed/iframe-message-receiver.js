@@ -37,7 +37,7 @@ function IFrameMessageReceiver() {
 }
 IFrameMessageReceiver.prototype = new EventEmitter();
 
-IFrameMessageReceiver.prototype.onMessage_ = function(event) {
+IFrameMessageReceiver.prototype.onMessage_ = function (event) {
   if (Util.isDebug()) {
     console.log('onMessage_', event);
   }

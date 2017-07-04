@@ -30,8 +30,8 @@ function SphereRenderer(scene) {
  *
  * @return {Promise}
  */
-SphereRenderer.prototype.setPhotosphere = function(src, opt_params) {
-  return new Promise(function(resolve, reject) {
+SphereRenderer.prototype.setPhotosphere = function (src, opt_params) {
+  return new Promise(function (resolve, reject) {
     this.resolve = resolve;
     this.reject = reject;
 
@@ -44,15 +44,15 @@ SphereRenderer.prototype.setPhotosphere = function(src, opt_params) {
     var loader = new THREE.TextureLoader();
     loader.crossOrigin = 'anonymous';
     loader.load(src, this.onTextureLoaded_.bind(this), undefined,
-                this.onTextureError_.bind(this));
+      this.onTextureError_.bind(this));
   }.bind(this));
 };
 
 /**
  * @return {Promise} Yeah.
  */
-SphereRenderer.prototype.set360Video = function(videoElement, opt_params) {
-  return new Promise(function(resolve, reject) {
+SphereRenderer.prototype.set360Video = function (videoElement, opt_params) {
+  return new Promise(function (resolve, reject) {
     this.resolve = resolve;
     this.reject = reject;
 
@@ -81,23 +81,23 @@ SphereRenderer.prototype.set360Video = function(videoElement, opt_params) {
  *
  * @return {Promise} When the opacity change is complete.
  */
-SphereRenderer.prototype.setOpacity = function(opacity, duration) {
+SphereRenderer.prototype.setOpacity = function (opacity, duration) {
   var scene = this.scene;
   // If we want the opacity
   var overlayOpacity = 1 - opacity;
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     var mask = scene.getObjectByName('opacityMask');
     var tween = new TWEEN.Tween({opacity: mask.material.opacity})
-        .to({opacity: overlayOpacity}, duration)
-        .easing(TWEEN.Easing.Quadratic.InOut);
-    tween.onUpdate(function(e) {
+      .to({opacity: overlayOpacity}, duration)
+      .easing(TWEEN.Easing.Quadratic.InOut);
+    tween.onUpdate(function (e) {
       mask.material.opacity = this.opacity;
     });
     tween.onComplete(resolve).start();
   });
 };
 
-SphereRenderer.prototype.onTextureLoaded_ = function(texture) {
+SphereRenderer.prototype.onTextureLoaded_ = function (texture) {
   var sphereLeft;
   var sphereRight;
   if (this.isStereo) {
@@ -119,12 +119,12 @@ SphereRenderer.prototype.onTextureLoaded_ = function(texture) {
   this.resolve();
 };
 
-SphereRenderer.prototype.onTextureError_ = function(error) {
+SphereRenderer.prototype.onTextureError_ = function (error) {
   this.reject('Unable to load texture from "' + this.src + '"');
 };
 
 
-SphereRenderer.prototype.createPhotosphere_ = function(texture, opt_params) {
+SphereRenderer.prototype.createPhotosphere_ = function (texture, opt_params) {
   var p = opt_params || {};
   p.scaleX = p.scaleX || 1;
   p.scaleY = p.scaleY || 1;
@@ -136,11 +136,11 @@ SphereRenderer.prototype.createPhotosphere_ = function(texture, opt_params) {
   p.thetaLength = p.thetaLength || Math.PI;
 
   var geometry = new THREE.SphereGeometry(1, 48, 48,
-      p.phiStart, p.phiLength, p.thetaStart, p.thetaLength);
+    p.phiStart, p.phiLength, p.thetaStart, p.thetaLength);
   geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
   var uvs = geometry.faceVertexUvs[0];
-  for (var i = 0; i < uvs.length; i ++) {
-    for (var j = 0; j < 3; j ++) {
+  for (var i = 0; i < uvs.length; i++) {
+    for (var j = 0; j < 3; j++) {
       uvs[i][j].x *= p.scaleX;
       uvs[i][j].x += p.offsetX;
       uvs[i][j].y *= p.scaleY;
@@ -148,17 +148,18 @@ SphereRenderer.prototype.createPhotosphere_ = function(texture, opt_params) {
     }
   }
 
-  var material = new THREE.MeshBasicMaterial({ map: texture });
+  var material = new THREE.MeshBasicMaterial({map: texture});
   var out = new THREE.Mesh(geometry, material);
   //out.visible = false;
   out.renderOrder = -1;
   return out;
 };
 
-SphereRenderer.prototype.createOpacityMask_ = function() {
+SphereRenderer.prototype.createOpacityMask_ = function () {
   var geometry = new THREE.SphereGeometry(0.49, 48, 48);
   var material = new THREE.MeshBasicMaterial({
-    color: 0x000000, side: THREE.DoubleSide, opacity: 0, transparent: true});
+    color: 0x000000, side: THREE.DoubleSide, opacity: 0, transparent: true
+  });
   var opacityMask = new THREE.Mesh(geometry, material);
   opacityMask.name = 'opacityMask';
   opacityMask.renderOrder = 1;

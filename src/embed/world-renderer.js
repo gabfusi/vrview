@@ -42,178 +42,178 @@ var AUTOPAN_ANGLE = 0.4;
  *   modechange(Boolean isVR): if the mode (eg. VR, fullscreen, etc) changes.
  */
 function WorldRenderer() {
-    this.init_();
+  this.init_();
 
-    this.sphereRenderer = new SphereRenderer(this.scene, this);
-    this.hotspotRenderer = new HotspotRenderer(this);
-    this.hotspotRenderer.on('focus', this.onHotspotFocus_.bind(this));
-    this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
-    //this.reticleRenderer = new ReticleRenderer(this.camera);
-    this.editorRenderer = new EditorRenderer(this);
-    this.currentVideoTime = { currentTime: 0};
+  this.sphereRenderer = new SphereRenderer(this.scene, this);
+  this.hotspotRenderer = new HotspotRenderer(this);
+  this.hotspotRenderer.on('focus', this.onHotspotFocus_.bind(this));
+  this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
+  //this.reticleRenderer = new ReticleRenderer(this.camera);
+  this.editorRenderer = new EditorRenderer(this);
+  this.currentVideoTime = {currentTime: 0};
 
-    // Get the VR Display as soon as we initialize.
-    navigator.getVRDisplays().then(function (displays) {
-        if (displays.length > 0) {
-            this.vrDisplay = displays[0];
-        }
-    }.bind(this));
+  // Get the VR Display as soon as we initialize.
+  navigator.getVRDisplays().then(function (displays) {
+    if (displays.length > 0) {
+      this.vrDisplay = displays[0];
+    }
+  }.bind(this));
 
 }
 WorldRenderer.prototype = new EventEmitter();
 
 WorldRenderer.prototype.render = function (time) {
-    if (!this.editorRenderer.isDrawing()) {
-        this.controls.update();
-    }
-    // this.hotspotRenderer.update(this.camera);
-    TWEEN.update(time);
-    this.effect.render(this.scene, this.camera);
-    if(this.videoProxy) {
-        this.currentVideoTime = this.videoProxy.getCurrentTime();
-        this.emit('timeupdate', this.currentVideoTime);
-    }
-    this.editorRenderer.update(this.currentVideoTime.currentTime);
-    this.dispose();
+  if (!this.editorRenderer.isDrawing()) {
+    this.controls.update();
+  }
+  // this.hotspotRenderer.update(this.camera);
+  TWEEN.update(time);
+  this.effect.render(this.scene, this.camera);
+  if (this.videoProxy) {
+    this.currentVideoTime = this.videoProxy.getCurrentTime();
+    this.emit('timeupdate', this.currentVideoTime);
+  }
+  this.editorRenderer.update(this.currentVideoTime.currentTime);
+  this.dispose();
 };
 
 /**
  * @return {Promise} When the scene is fully loaded.
  */
 WorldRenderer.prototype.setScene = function (scene) {
-    var self = this;
-    var promise = new Promise(function (resolve, reject) {
-        self.sceneResolve = resolve;
-        self.sceneReject = reject;
+  var self = this;
+  var promise = new Promise(function (resolve, reject) {
+    self.sceneResolve = resolve;
+    self.sceneReject = reject;
+  });
+
+  if (!scene || !scene.isValid()) {
+    this.didLoadFail_(scene.errorMessage);
+    return;
+  }
+
+  var params = {
+    isStereo: scene.isStereo,
+    loop: scene.loop
+  };
+  this.setDefaultYaw_(scene.defaultYaw || 0);
+
+  // Disable VR mode if explicitly disabled, or if we're loading a video on iOS
+  // 9 or earlier.
+  if (scene.isVROff || (scene.video && Util.isIOS9OrLess())) {
+    this.manager.setVRCompatibleOverride(false);
+  }
+
+  // Set various callback overrides in iOS.
+  if (Util.isIOS()) {
+    this.manager.setFullscreenCallback(function () {
+      Util.sendParentMessage({type: 'enter-fullscreen'});
     });
+    this.manager.setExitFullscreenCallback(function () {
+      Util.sendParentMessage({type: 'exit-fullscreen'});
+    });
+    this.manager.setVRCallback(function () {
+      Util.sendParentMessage({type: 'enter-vr'});
+    });
+  }
 
-    if (!scene || !scene.isValid()) {
-        this.didLoadFail_(scene.errorMessage);
-        return;
+  // If we're dealing with an image, and not a video.
+  if (scene.image && !scene.video) {
+    if (scene.preview) {
+      // First load the preview.
+      this.sphereRenderer.setPhotosphere(scene.preview, params).then(function () {
+        // As soon as something is loaded, emit the load event to hide the
+        // loading progress bar.
+        self.didLoad_();
+        // Then load the full resolution image.
+        self.sphereRenderer.setPhotosphere(scene.image, params);
+      }).catch(self.didLoadFail_.bind(self));
+    } else {
+      // No preview -- go straight to rendering the full image.
+      this.sphereRenderer.setPhotosphere(scene.image, params).then(function () {
+        self.didLoad_();
+      }).catch(self.didLoadFail_.bind(self));
     }
+  } else if (scene.video) {
+    if (Util.isIE11()) {
+      // On IE 11, if an 'image' param is provided, load it instead of showing
+      // an error.
+      //
+      // TODO(smus): Once video textures are supported, remove this fallback.
+      if (scene.image) {
+        this.sphereRenderer.setPhotosphere(scene.image, params).then(function () {
+          self.didLoad_();
+        }).catch(self.didLoadFail_.bind(self));
+      } else {
+        this.didLoadFail_('Video is not supported on IE11.');
+      }
+    } else {
+      this.player = new AdaptivePlayer(params.loop);
+      this.player.on('load', function (videoElement) {
+        self.sphereRenderer.set360Video(videoElement, params).then(function () {
+          self.didLoad_({videoElement: videoElement});
+        }).catch(self.didLoadFail_.bind(self));
+      });
+      this.player.on('error', function (error) {
+        self.didLoadFail_('Video load error: ' + error);
+      });
+      this.player.load(scene.video);
 
-    var params = {
-        isStereo: scene.isStereo,
-        loop: scene.loop
-    };
-    this.setDefaultYaw_(scene.defaultYaw || 0);
-
-    // Disable VR mode if explicitly disabled, or if we're loading a video on iOS
-    // 9 or earlier.
-    if (scene.isVROff || (scene.video && Util.isIOS9OrLess())) {
-        this.manager.setVRCompatibleOverride(false);
+      this.videoProxy = new VideoProxy(this.player.video);
     }
+  }
 
-    // Set various callback overrides in iOS.
-    if (Util.isIOS()) {
-        this.manager.setFullscreenCallback(function () {
-            Util.sendParentMessage({type: 'enter-fullscreen'});
-        });
-        this.manager.setExitFullscreenCallback(function () {
-            Util.sendParentMessage({type: 'exit-fullscreen'});
-        });
-        this.manager.setVRCallback(function () {
-            Util.sendParentMessage({type: 'enter-vr'});
-        });
-    }
+  this.sceneInfo = scene;
+  this.editorRenderer.setEditorMode(this.sceneInfo.editorMode);
+  if (Util.isDebug()) {
+    console.log('Loaded scene', scene);
+  }
 
-    // If we're dealing with an image, and not a video.
-    if (scene.image && !scene.video) {
-        if (scene.preview) {
-            // First load the preview.
-            this.sphereRenderer.setPhotosphere(scene.preview, params).then(function () {
-                // As soon as something is loaded, emit the load event to hide the
-                // loading progress bar.
-                self.didLoad_();
-                // Then load the full resolution image.
-                self.sphereRenderer.setPhotosphere(scene.image, params);
-            }).catch(self.didLoadFail_.bind(self));
-        } else {
-            // No preview -- go straight to rendering the full image.
-            this.sphereRenderer.setPhotosphere(scene.image, params).then(function () {
-                self.didLoad_();
-            }).catch(self.didLoadFail_.bind(self));
-        }
-    } else if (scene.video) {
-        if (Util.isIE11()) {
-            // On IE 11, if an 'image' param is provided, load it instead of showing
-            // an error.
-            //
-            // TODO(smus): Once video textures are supported, remove this fallback.
-            if (scene.image) {
-                this.sphereRenderer.setPhotosphere(scene.image, params).then(function () {
-                    self.didLoad_();
-                }).catch(self.didLoadFail_.bind(self));
-            } else {
-                this.didLoadFail_('Video is not supported on IE11.');
-            }
-        } else {
-            this.player = new AdaptivePlayer(params.loop);
-            this.player.on('load', function (videoElement) {
-                self.sphereRenderer.set360Video(videoElement, params).then(function () {
-                    self.didLoad_({videoElement: videoElement});
-                }).catch(self.didLoadFail_.bind(self));
-            });
-            this.player.on('error', function (error) {
-                self.didLoadFail_('Video load error: ' + error);
-            });
-            this.player.load(scene.video);
-
-            this.videoProxy = new VideoProxy(this.player.video);
-        }
-    }
-
-    this.sceneInfo = scene;
-    this.editorRenderer.setEditorMode(this.sceneInfo.editorMode);
-    if (Util.isDebug()) {
-        console.log('Loaded scene', scene);
-    }
-
-    return promise;
+  return promise;
 };
 
 WorldRenderer.prototype.isVRMode = function () {
-    return !!this.vrDisplay && this.vrDisplay.isPresenting;
+  return !!this.vrDisplay && this.vrDisplay.isPresenting;
 };
 
 WorldRenderer.prototype.submitFrame = function () {
-    if (this.isVRMode()) {
-        this.vrDisplay.submitFrame();
-    }
+  if (this.isVRMode()) {
+    this.vrDisplay.submitFrame();
+  }
 };
 
 WorldRenderer.prototype.dispose = function () {
-    var eyeLeft = this.scene.getObjectByName('eyeLeft'),
-        eyeRight = this.scene.getObjectByName('eyeRight');
-    if (!eyeLeft || !eyeRight) return
-    if (eyeLeft.material.map) eyeLeft.material.map.dispose();
-    eyeLeft.geometry.dispose();
+  var eyeLeft = this.scene.getObjectByName('eyeLeft'),
+    eyeRight = this.scene.getObjectByName('eyeRight');
+  if (!eyeLeft || !eyeRight) return
+  if (eyeLeft.material.map) eyeLeft.material.map.dispose();
+  eyeLeft.geometry.dispose();
 
-    if (eyeRight.material.map) eyeRight.material.map.dispose();
-    eyeRight.geometry.dispose();
+  if (eyeRight.material.map) eyeRight.material.map.dispose();
+  eyeRight.geometry.dispose();
 }
 
 WorldRenderer.prototype.destroy = function () {
-    if (this.player) {
-        this.player.removeAllListeners();
-        this.player.destroy();
-        this.player = null;
-    }
+  if (this.player) {
+    this.player.removeAllListeners();
+    this.player.destroy();
+    this.player = null;
+  }
 }
 
 WorldRenderer.prototype.didLoad_ = function (opt_event) {
-    var event = opt_event || {};
-    this.emit('load', event);
-    if (this.sceneResolve) {
-        this.sceneResolve();
-    }
+  var event = opt_event || {};
+  this.emit('load', event);
+  if (this.sceneResolve) {
+    this.sceneResolve();
+  }
 };
 
 WorldRenderer.prototype.didLoadFail_ = function (message) {
-    this.emit('error', message);
-    if (this.sceneReject) {
-        this.sceneReject(message);
-    }
+  this.emit('error', message);
+  if (this.sceneReject) {
+    this.sceneReject(message);
+  }
 };
 
 /**
@@ -221,9 +221,9 @@ WorldRenderer.prototype.didLoadFail_ = function (message) {
  * @param {Number} angleRad The yaw in radians.
  */
 WorldRenderer.prototype.setDefaultYaw_ = function (angleRad) {
-    // Rotate the camera parent to take into account the scene's rotation.
-    // By default, it should be at the center of the image.
-    this.camera.parent.rotation.y = (Math.PI / 2.0) + angleRad;
+  // Rotate the camera parent to take into account the scene's rotation.
+  // By default, it should be at the center of the image.
+  this.camera.parent.rotation.y = (Math.PI / 2.0) + angleRad;
 };
 
 /**
@@ -231,123 +231,123 @@ WorldRenderer.prototype.setDefaultYaw_ = function (angleRad) {
  * there is live content there (on desktop only).
  */
 WorldRenderer.prototype.autopan = function (duration) {
-    var targetY = this.camera.parent.rotation.y - AUTOPAN_ANGLE;
-    var tween = new TWEEN.Tween(this.camera.parent.rotation)
-        .to({y: targetY}, AUTOPAN_DURATION)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .start();
+  var targetY = this.camera.parent.rotation.y - AUTOPAN_ANGLE;
+  var tween = new TWEEN.Tween(this.camera.parent.rotation)
+    .to({y: targetY}, AUTOPAN_DURATION)
+    .easing(TWEEN.Easing.Quadratic.Out)
+    .start();
 };
 
 WorldRenderer.prototype.init_ = function () {
-    var container = document.querySelector('body');
-    var aspect = window.innerWidth / window.innerHeight;
-    var camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 100);
-    camera.layers.enable(1);
+  var container = document.querySelector('body');
+  var aspect = window.innerWidth / window.innerHeight;
+  var camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 100);
+  camera.layers.enable(1);
 
-    var cameraDummy = new THREE.Object3D();
-    cameraDummy.add(camera);
+  var cameraDummy = new THREE.Object3D();
+  cameraDummy.add(camera);
 
-    // Antialiasing disabled to improve performance.
-    var renderer = new THREE.WebGLRenderer({antialias: false});
-    renderer.setClearColor(0x000000, 0);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+  // Antialiasing disabled to improve performance.
+  var renderer = new THREE.WebGLRenderer({antialias: false});
+  renderer.setClearColor(0x000000, 0);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
 
-    container.appendChild(renderer.domElement);
+  container.appendChild(renderer.domElement);
 
-    var controls = new THREE.VRControls(camera);
-    var effect = new THREE.VREffect(renderer);
+  var controls = new THREE.VRControls(camera);
+  var effect = new THREE.VREffect(renderer);
 
-    // Disable eye separation.
-    effect.scale = 0;
-    effect.setSize(window.innerWidth, window.innerHeight);
+  // Disable eye separation.
+  effect.scale = 0;
+  effect.setSize(window.innerWidth, window.innerHeight);
 
-    // Present submission of frames automatically. This is done manually in
-    // submitFrame().
-    effect.autoSubmitFrame = false;
+  // Present submission of frames automatically. This is done manually in
+  // submitFrame().
+  effect.autoSubmitFrame = false;
 
-    this.camera = camera;
-    this.renderer = renderer;
-    this.effect = effect;
-    this.controls = controls;
-    this.manager = new WebVRManager(renderer, effect, {predistorted: false});
+  this.camera = camera;
+  this.renderer = renderer;
+  this.effect = effect;
+  this.controls = controls;
+  this.manager = new WebVRManager(renderer, effect, {predistorted: false});
 
-    this.scene = this.createScene_();
-    this.scene.add(this.camera.parent);
+  this.scene = this.createScene_();
+  this.scene.add(this.camera.parent);
 
 
-    // Watch the resize event.
-    window.addEventListener('resize', this.onResize_.bind(this));
+  // Watch the resize event.
+  window.addEventListener('resize', this.onResize_.bind(this));
 
-    // Prevent context menu.
-    window.addEventListener('contextmenu', this.onContextMenu_.bind(this));
+  // Prevent context menu.
+  window.addEventListener('contextmenu', this.onContextMenu_.bind(this));
 
-    window.addEventListener('vrdisplaypresentchange',
-        this.onVRDisplayPresentChange_.bind(this));
+  window.addEventListener('vrdisplaypresentchange',
+    this.onVRDisplayPresentChange_.bind(this));
 };
 
 WorldRenderer.prototype.onResize_ = function () {
-    this.effect.setSize(window.innerWidth, window.innerHeight);
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
+  this.effect.setSize(window.innerWidth, window.innerHeight);
+  this.camera.aspect = window.innerWidth / window.innerHeight;
+  this.camera.updateProjectionMatrix();
 };
 
 WorldRenderer.prototype.onVRDisplayPresentChange_ = function (e) {
-    if (Util.isDebug()) {
-        console.log('onVRDisplayPresentChange_');
-    }
-    var isVR = this.isVRMode();
+  if (Util.isDebug()) {
+    console.log('onVRDisplayPresentChange_');
+  }
+  var isVR = this.isVRMode();
 
-    // If the mode changed to VR and there is at least one hotspot, show reticle.
-    var isReticleVisible = isVR && this.hotspotRenderer.getCount() > 0;
-    //this.reticleRenderer.setVisibility(isReticleVisible);
+  // If the mode changed to VR and there is at least one hotspot, show reticle.
+  var isReticleVisible = isVR && this.hotspotRenderer.getCount() > 0;
+  //this.reticleRenderer.setVisibility(isReticleVisible);
 
-    // Resize the renderer for good measure.
-    this.onResize_();
+  // Resize the renderer for good measure.
+  this.onResize_();
 
-    // Analytics.
-    if (window.analytics) {
-        analytics.logModeChanged(isVR);
-    }
+  // Analytics.
+  if (window.analytics) {
+    analytics.logModeChanged(isVR);
+  }
 
-    // When exiting VR mode from iOS, make sure we emit back an exit-fullscreen event.
-    if (!isVR && Util.isIOS()) {
-        Util.sendParentMessage({type: 'exit-fullscreen'});
-    }
+  // When exiting VR mode from iOS, make sure we emit back an exit-fullscreen event.
+  if (!isVR && Util.isIOS()) {
+    Util.sendParentMessage({type: 'exit-fullscreen'});
+  }
 
-    // Emit a mode change event back to any listeners.
-    this.emit('modechange', isVR);
+  // Emit a mode change event back to any listeners.
+  this.emit('modechange', isVR);
 };
 
 WorldRenderer.prototype.createScene_ = function (opt_params) {
-    var scene = new THREE.Scene();
+  var scene = new THREE.Scene();
 
-    // Add a group for the photosphere.
-    var photoGroup = new THREE.Object3D();
-    photoGroup.name = 'photo';
-    scene.add(photoGroup);
+  // Add a group for the photosphere.
+  var photoGroup = new THREE.Object3D();
+  photoGroup.name = 'photo';
+  scene.add(photoGroup);
 
-    return scene;
+  return scene;
 };
 
 WorldRenderer.prototype.onHotspotFocus_ = function (id) {
-    // Set the default cursor to be a pointer.
-    this.setCursor_('pointer');
+  // Set the default cursor to be a pointer.
+  this.setCursor_('pointer');
 };
 
 WorldRenderer.prototype.onHotspotBlur_ = function (id) {
-    // Reset the default cursor to be the default one.
-    this.setCursor_('');
+  // Reset the default cursor to be the default one.
+  this.setCursor_('');
 };
 
 WorldRenderer.prototype.setCursor_ = function (cursor) {
-    this.renderer.domElement.style.cursor = cursor;
+  this.renderer.domElement.style.cursor = cursor;
 };
 
 WorldRenderer.prototype.onContextMenu_ = function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
+  e.preventDefault();
+  e.stopPropagation();
+  return false;
 };
 
 
