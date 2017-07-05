@@ -70,11 +70,13 @@ WorldRenderer.prototype.render = function (time) {
   TWEEN.update(time);
   this.effect.render(this.scene, this.camera);
   if (this.videoProxy) {
-    this.currentVideoTime = this.videoProxy.getCurrentTime();
-    this.emit('timeupdate', this.currentVideoTime);
+    var ct = this.videoProxy.getCurrentTime();
+    if(ct !== this.currentVideoTime) {
+      this.currentVideoTime = ct;
+      this.emit('timeupdate', this.currentVideoTime);
+    }
   }
   this.editorRenderer.update(this.currentVideoTime.currentTime);
-  this.dispose();
 };
 
 /**
@@ -181,17 +183,6 @@ WorldRenderer.prototype.submitFrame = function () {
     this.vrDisplay.submitFrame();
   }
 };
-
-WorldRenderer.prototype.dispose = function () {
-  var eyeLeft = this.scene.getObjectByName('eyeLeft'),
-    eyeRight = this.scene.getObjectByName('eyeRight');
-  if (!eyeLeft || !eyeRight) return
-  if (eyeLeft.material.map) eyeLeft.material.map.dispose();
-  eyeLeft.geometry.dispose();
-
-  if (eyeRight.material.map) eyeRight.material.map.dispose();
-  eyeRight.geometry.dispose();
-}
 
 WorldRenderer.prototype.destroy = function () {
   if (this.player) {

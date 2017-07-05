@@ -73,66 +73,62 @@ EditorRenderer.prototype.setEditorMode = function (bool) {
  */
 EditorRenderer.prototype.update = function (currentTime) {
 
-  if (!currentTime) {
-    currentTime = 0;
-  }
+  if (!currentTime) { currentTime = 0; }
+  if (this.videoTime === currentTime) { return; }
 
   // on each video frame
-  if (this.videoTime !== currentTime) {
-    this.videoTime = currentTime;
+  this.videoTime = currentTime;
 
-    var shape,
-      shapePoints,
-      shapePointVector,
-      shapePointTransitionQuaternion,
-      temp,
-      shapesKeyframesIndex,
-      percentage;
+  var shape,
+    shapePoints,
+    shapePointVector,
+    shapePointTransitionQuaternion,
+    temp,
+    shapesKeyframesIndex,
+    percentage;
 
-    for (var shape_id in this.shapesKeyframes) {
+  for (var shape_id in this.shapesKeyframes) {
 
-      temp = this.getShapeAnimationPercentage_(shape_id, currentTime);
-      shape = this.shapes[shape_id];
+    temp = this.getShapeAnimationPercentage_(shape_id, currentTime);
+    shape = this.shapes[shape_id];
 
-      if (temp === -1) {
+    if (temp === -1) {
 
-        // hide shape
-        shape.visible = false;
-        continue;
+      // hide shape
+      shape.visible = false;
+      continue;
 
-      } else if (temp === false) {
+    } else if (temp === false) {
 
-        // do not interpolate shape
-
-        if (!shape.visible) {
-          shape.visible = true;
-        }
-
-        continue;
-      }
-
-      shapesKeyframesIndex = temp[0]; // initial keyframe index
-      percentage = temp[1];           // percentage [0, 1] of the transformation
-
-      shapePoints = this.shapesKeyframes[shape_id][shapesKeyframesIndex].vertices;
-
-      // translate all shape point using Quaternion.slerp
-      for (var i = 0, l = shapePoints.length; i < l; i++) {
-        shapePointVector = new THREE.Vector3(shapePoints[i].x, shapePoints[i].y, shapePoints[i].z);
-        shapePointTransitionQuaternion = (new THREE.Quaternion()).slerp(shapePoints[i].quaternion, percentage);
-
-        if (shape.children[i].name === 'handle') {
-          shape.children[i].position.copy(shapePointVector.applyQuaternion(shapePointTransitionQuaternion));
-        }
-      }
-
-      this.updateShapeFill_(shape, false);
+      // do not interpolate shape
 
       if (!shape.visible) {
         shape.visible = true;
       }
+
+      continue;
     }
 
+    shapesKeyframesIndex = temp[0]; // initial keyframe index
+    percentage = temp[1];           // percentage [0, 1] of the transformation
+
+    shapePoints = this.shapesKeyframes[shape_id][shapesKeyframesIndex].vertices;
+
+    // translate all shape point using Quaternion.slerp
+    for (var i = 0, l = shapePoints.length; i < l; i++) {
+
+      if (shape.children[i].name === 'handle') {
+        shapePointVector = new THREE.Vector3(shapePoints[i].x, shapePoints[i].y, shapePoints[i].z);
+        shapePointTransitionQuaternion = (new THREE.Quaternion()).slerp(shapePoints[i].quaternion, percentage);
+        shape.children[i].position.copy(shapePointVector.applyQuaternion(shapePointTransitionQuaternion));
+      }
+    }
+
+    this.updateShapeFill_(shape, false);
+
+    if (!shape.visible) {
+      shape.visible = true;
+    }
   }
 
 };
@@ -151,8 +147,8 @@ EditorRenderer.prototype.update = function (currentTime) {
 EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, frame) {
 
   var shapeKeyframes = this.shapesKeyframes[shape_id],
-    startFrame,
-    endFrame,
+    prevFrame,
+    nextFrame,
     firstFrame,
     lastFrame,
     relativeFrame,
@@ -181,21 +177,22 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
   // get rotation quaternions
   for (var i = 0, l = shapeKeyframes.length; i < l; i++) {
 
-    startFrame = shapeKeyframes[i].frame;
+    prevFrame = shapeKeyframes[i].frame;
 
     if (i + 1 === l) {
       // mimic a keyframe on shape lastFrame
-      endFrame = lastFrame;
-      return false;
+      nextFrame = lastFrame;
+      //return false;
     } else {
-      endFrame = shapeKeyframes[i + 1].frame;
+      nextFrame = shapeKeyframes[i + 1].frame;
     }
 
-    if (startFrame <= relativeFrame && relativeFrame <= endFrame) {
+    if (prevFrame <= relativeFrame && relativeFrame <= nextFrame) {
 
       // calculate shape transformations
       for (var j = 0, ll = shapeKeyframes[i].vertices.length; j < ll; j++) {
 
+        // add rotation quaternion to keyframe if not exists
         if (typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
 
           Q1 = shapeKeyframes[i].vertices[j];
@@ -211,7 +208,7 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
       }
 
       // return animation percentage [0, 1]
-      return [i, (relativeFrame - startFrame) / (endFrame - startFrame)];
+      return [i, (relativeFrame - prevFrame) / (nextFrame - prevFrame)];
     }
   }
 
@@ -781,8 +778,6 @@ EditorRenderer.prototype.addShapeKeyframe = function (shape_id, frame, vertices)
   this.shapesKeyframes[shape_id].sort(function (a, b) {
     return (a.frame > b.frame) ? 1 : ((b.frame > a.frame) ? -1 : 0);
   });
-
-  // TODO delete quaternion of previous keyframe
 
   var keyframeIndex = this.getShapeKeyframeIndex_(shape_id, frame);
 
