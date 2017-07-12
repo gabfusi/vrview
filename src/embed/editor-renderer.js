@@ -195,14 +195,16 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
         // add rotation quaternion to keyframe if not exists
         if (typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
 
-          Q1 = shapeKeyframes[i].vertices[j];
-          Q2 = shapeKeyframes[i + 1].vertices[j];
+          if(shapeKeyframes[i] && shapeKeyframes[i + 1]) {
 
-          shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
+            Q1 = shapeKeyframes[i].vertices[j];
+            Q2 = shapeKeyframes[i + 1].vertices[j];
 
-          console.debug('Created quaternion for shape ' + shape_id + ' from frame ' + shapeKeyframes[i].frame + ' and frame ' + shapeKeyframes[i + 1].frame)
-        } else {
-          console.debug('Quaternion exists for shape ' + shape_id + ' at frame ' + shapeKeyframes[i].frame)
+            shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
+
+            console.debug('Created quaternion for shape ' + shape_id + ' from frame ' + shapeKeyframes[i].frame + ' and frame ' + shapeKeyframes[i + 1].frame)
+
+          }
         }
 
       }
