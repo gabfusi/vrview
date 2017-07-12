@@ -39,6 +39,8 @@ function EditorRenderer(worldRenderer) {
   this.isDragging = false;
   // video time
   this.videoTime = 0;
+  // pointerCursorActive
+  this.pointerCursorActive = false;
 
   var body = document.body;
   if (!Util.isMobile()) {
@@ -73,8 +75,12 @@ EditorRenderer.prototype.setEditorMode = function (bool) {
  */
 EditorRenderer.prototype.update = function (currentTime) {
 
-  if (!currentTime) { currentTime = 0; }
-  if (this.videoTime === currentTime) { return; }
+  if (!currentTime) {
+    currentTime = 0;
+  }
+  if (this.videoTime === currentTime) {
+    return;
+  }
 
   // on each video frame
   this.videoTime = currentTime;
@@ -195,17 +201,15 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
         // add rotation quaternion to keyframe if not exists
         if (typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
 
-          console.log(i);
-
           Q1 = shapeKeyframes[i].vertices[j];
           Q2 = shapeKeyframes[i + 1].vertices[j];
 
           shapeKeyframes[i].vertices[j].quaternion = (new THREE.Quaternion()).setFromUnitVectors(Q1.normalize(), Q2.normalize());
 
-          console.debug('Created quaternion for shape ' + shape_id + ' from frame ' + shapeKeyframes[i].frame + ' and frame ' + shapeKeyframes[i + 1].frame)
-        } else {
-          console.debug('Quaternion exists for shape ' + shape_id + ' at frame ' + shapeKeyframes[i].frame)
-        }
+          // console.debug('Created quaternion for shape ' + shape_id + ' from frame ' + shapeKeyframes[i].frame + ' and frame ' + shapeKeyframes[i + 1].frame)
+        } //else {
+          //console.debug('Quaternion exists for shape ' + shape_id + ' at frame ' + shapeKeyframes[i].frame)
+        //}
 
       }
 
@@ -311,13 +315,14 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
  * @private
  */
 EditorRenderer.prototype.onMouseMove_ = function (e) {
+  var pointOnSphere;
   if (this.isDrawing()) {
     // prevent camera rotation
     e.stopPropagation();
 
     if (this.isDragging) {
       this.updateMouse_(e);
-      var pointOnSphere = this.getClickPositionOnSphere_();
+      pointOnSphere = this.getClickPositionOnSphere_();
 
       if (this.selectedShapeHandle) {
         // translate shape handle
@@ -335,8 +340,22 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
         this.prevPointerPosition = pointOnSphere;
       }
     }
-
   }
+  else if (!this.editorMode) {
+    // custom cursor on area mouse over
+    this.updateMouse_(e);
+    var intersectingShape = this.getIntersectingShapeOrHandles_();
+
+    if(intersectingShape && intersectingShape.name === 'fill' && intersectingShape.visible === true
+      && !this.pointerCursorActive) {
+        body.classList.add('action-pointer');
+        this.pointerCursorActive = true;
+    } else if(this.pointerCursorActive) {
+        body.classList.remove('action-pointer'); 
+        this.pointerCursorActive = false;
+      }
+    }
+
 };
 
 /**
