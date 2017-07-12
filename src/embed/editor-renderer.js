@@ -348,10 +348,10 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
 
     if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true
       && !this.pointerCursorActive) {
-        body.classList.add('action-pointer');
+        document.body.classList.add('action-pointer');
         this.pointerCursorActive = true;
     } else if(this.pointerCursorActive) {
-        body.classList.remove('action-pointer');
+        document.body.classList.remove('action-pointer');
         this.pointerCursorActive = false;
       }
     }
