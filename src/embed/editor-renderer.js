@@ -346,15 +346,21 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
     this.updateMouse_(e);
     var intersectingShape = this.getIntersectingShapeOrHandles_();
 
-    if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true
+    if (intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true
       && !this.pointerCursorActive) {
+      this.pointerCursorActive = true;
+      requestAnimationFrame(function () {
         document.body.classList.add('action-pointer');
-        this.pointerCursorActive = true;
-    } else if(this.pointerCursorActive) {
+        console.info('added class! ', document.body.classList)
+      });
+    } else if (this.pointerCursorActive) {
+      this.pointerCursorActive = false;
+      requestAnimationFrame(function () {
         document.body.classList.remove('action-pointer');
-        this.pointerCursorActive = false;
-      }
+        console.info('removed class! ', document.body.classList)
+      });
     }
+  }
 
 };
 
