@@ -173,6 +173,7 @@ Player.prototype.onMessage_ = function (event) {
 
   switch (type) {
     case 'ready':
+    case 'sceneready':
     case 'modechange':
     case 'error':
     case 'click':
@@ -183,7 +184,7 @@ Player.prototype.onMessage_ = function (event) {
     case 'shapeselected':
     case 'shapeunselected':
     case 'ended':
-      if (type === 'ready') {
+      if (type === 'ready' || type === 'sceneready') {
         this.time_.duration = data.duration;
       }
       this.emit(type, data);

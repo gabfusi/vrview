@@ -137,6 +137,13 @@ function onRenderLoad(event) {
       }
     });
     isReadySent = true;
+  } else {
+    Util.sendParentMessage({
+        type: 'sceneready',
+        data: {
+            duration: worldRenderer.sceneInfo.video ? event.videoElement.duration : 0
+        }
+    });
   }
 }
 
