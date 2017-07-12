@@ -182,10 +182,10 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
     if (i + 1 === l) {
       // mimic a keyframe on shape lastFrame
       nextFrame = lastFrame;
-      //return false;
-    } else {
-      nextFrame = shapeKeyframes[i + 1].frame;
+      return false;
     }
+
+    nextFrame = shapeKeyframes[i + 1].frame;
 
     if (prevFrame <= relativeFrame && relativeFrame <= nextFrame) {
 
