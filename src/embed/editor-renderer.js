@@ -346,12 +346,12 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
     this.updateMouse_(e);
     var intersectingShape = this.getIntersectingShapeOrHandles_();
 
-    if(intersectingShape && intersectingShape.name === 'fill' && intersectingShape.visible === true
+    if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true
       && !this.pointerCursorActive) {
         body.classList.add('action-pointer');
         this.pointerCursorActive = true;
     } else if(this.pointerCursorActive) {
-        body.classList.remove('action-pointer'); 
+        body.classList.remove('action-pointer');
         this.pointerCursorActive = false;
       }
     }
@@ -946,14 +946,12 @@ EditorRenderer.prototype.getIntersectingShapeOrHandles_ = function () {
     sorted = intersectingHandles.sort(function (a, b) {
       return a.distance - b.distance;
     });
-    console.log(sorted);
     return sorted[0].object.visible ? sorted[0].object : false;
   }
   else if (intersectingShapes.length) {
     sorted = intersectingShapes.sort(function (a, b) {
       return a.distance - b.distance;
     });
-    console.log(sorted[0].object, sorted);
     return sorted[0].object.parent.visible ? sorted[0].object.parent : false;
   }
 };
