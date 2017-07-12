@@ -117,7 +117,7 @@ EditorRenderer.prototype.update = function (currentTime) {
     // translate all shape point using Quaternion.slerp
     for (var i = 0, l = shapePoints.length; i < l; i++) {
 
-      if (shape.children[i].name === 'handle') {
+      if (shape.children[i].name === 'handle' && typeof shapePoints[i].quaternion !== 'undefined') {
         shapePointVector = new THREE.Vector3(shapePoints[i].x, shapePoints[i].y, shapePoints[i].z);
         shapePointTransitionQuaternion = (new THREE.Quaternion()).slerp(shapePoints[i].quaternion, percentage);
         shape.children[i].position.copy(shapePointVector.applyQuaternion(shapePointTransitionQuaternion));
@@ -194,6 +194,8 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
 
         // add rotation quaternion to keyframe if not exists
         if (typeof shapeKeyframes[i].vertices[j].quaternion === 'undefined') {
+
+          console.log(i);
 
           Q1 = shapeKeyframes[i].vertices[j];
           Q2 = shapeKeyframes[i + 1].vertices[j];
@@ -616,6 +618,10 @@ EditorRenderer.prototype.clearShapes = function () {
   for (var id in this.shapes) {
     this.removeShape(id);
   }
+
+  this.shapes = {};
+  this.shapesInfo = {};
+  this.shapesKeyframes = {};
 };
 
 /**
