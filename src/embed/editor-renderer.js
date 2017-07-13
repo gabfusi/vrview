@@ -228,7 +228,7 @@ EditorRenderer.prototype.getShapeAnimationPercentage_ = function (shape_id, fram
  * @returns {boolean}
  */
 EditorRenderer.prototype.isDrawing = function () {
-  return !!(this.toolActive || this.selectedShape || this.selectedShapeHandle);
+  return this.editorMode && !!(this.toolActive || this.selectedShape || this.selectedShapeHandle);
 };
 
 /**
