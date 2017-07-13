@@ -74,6 +74,11 @@ canvas:active {
   cursor: -webkit-grabbing;
 }
 
+.action-pointer canvas,
+.action-pointer canvas:active {
+    cursor: url(images/cursorVR.png), alias;
+}
+
 #play-overlay {
   position: fixed;
   width: 100%;
