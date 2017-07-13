@@ -694,7 +694,7 @@ EditorRenderer.prototype.createShapeFill_ = function (vertices, isShapeSelected,
       (typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId].background_color : 0xffffff),
     side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.6
+    opacity: (typeof this.shapesInfo[shapeId] !== 'undefined' ? this.shapesInfo[shapeId].opacity : 0.6)
   });
   var faces = [];
   var flattenVertices = [];
