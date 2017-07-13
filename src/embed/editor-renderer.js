@@ -358,7 +358,7 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
 
       }
 
-    } else if(!this.pointerCursorActive) {
+    } else if(this.pointerCursorActive) {
 
       this.pointerCursorActive = false;
       requestAnimationFrame(function () {
