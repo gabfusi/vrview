@@ -487,9 +487,9 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
   if (closeShape) {
 
     // add last vertex (same as first) to close the shape
-    this.currentShapeGeometry.vertices.push(
-      new THREE.Vector3(this.currentShapeGeometry.vertices[0].x, this.currentShapeGeometry.vertices[0].y, this.currentShapeGeometry.vertices[0].z)
-    );
+    //this.currentShapeGeometry.vertices.push(
+    //  new THREE.Vector3(this.currentShapeGeometry.vertices[0].x, this.currentShapeGeometry.vertices[0].y, this.currentShapeGeometry.vertices[0].z)
+    //);
 
     var shape = this.createShape(this.currentShapeGeometry.vertices);
 
