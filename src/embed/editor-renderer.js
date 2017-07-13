@@ -482,23 +482,7 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
     closeShape = this.isPointNearTo_(point, this.currentShapeGeometry.vertices[0]);
   }
 
-  // create a new geometry object
-  if (!this.drawingShape) {
-    this.drawingShape = true;
-    this.currentShapeGeometry = new THREE.Geometry();
-  }
-
-  // add currrent point to geometry object
-  if (!this.drawingShape || !closeShape) {
-
-    this.currentShapeGeometry.vertices.push(
-      new THREE.Vector3(point.x, point.y, point.z)
-    );
-
-    // draw temp segment
-    this.renderDrawnSegment_();
-  }
-
+  // if user wants to close the current shape,
   // close the geometry object and render the shape
   if (closeShape) {
 
@@ -515,7 +499,25 @@ EditorRenderer.prototype.addPointToShape_ = function (point) {
     // deactivate tool
     this.endDraw();
     this.emit('drawn', shape);
+    return;
   }
+
+  // otherwise draw a new vertex
+
+  // if user hasn't drawn vertices yet,
+  // create a new geometry object
+  if (!this.drawingShape) {
+    this.drawingShape = true;
+    this.currentShapeGeometry = new THREE.Geometry();
+  }
+
+  // add currrent point to geometry object
+  this.currentShapeGeometry.vertices.push(
+    new THREE.Vector3(point.x, point.y, point.z)
+  );
+
+  // draw temp segment
+  this.renderDrawnSegment_();
 
 };
 
