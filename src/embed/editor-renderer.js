@@ -455,7 +455,7 @@ function parseCSSColor(rgba) {
 
     if (rgb) {
       ret.color = "rgb(" + parseInt(rgb[1], 10) + "," + parseInt(rgb[2], 10) + "," + parseInt(rgb[3], 10) + ")";
-      ret.opacity = typeof rgb[4] !== 'undefined' ? parseFloat(rgb[1]) : 1;
+      ret.opacity = typeof rgb[4] !== 'undefined' ? parseFloat(rgb[4]) : 1;
     }
   }
 
