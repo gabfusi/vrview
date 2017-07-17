@@ -54,7 +54,7 @@ function EditorRenderer(worldRenderer) {
   body.addEventListener('touchend', this.onTouchEnd_.bind(this), false);
 
 
-  this.reticleRenderer = new ReticleRenderer(this.camera);
+  this.reticleRenderer = new ReticleRenderer(this.worldRenderer.camera);
   this.reticleVisible = false;
 
   // Add a placeholder for shapes.
@@ -322,7 +322,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
       this.blurShape_(this.selectedShape.name);
     }
 
-    this.deselectShape(); 
+    this.deselectShape();
   }
 
   // check if a shape has to be selected
