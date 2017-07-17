@@ -4,6 +4,7 @@ var EventEmitter = require('eventemitter3');
 var TWEEN = require('tween.js');
 var Util = require('../util');
 var earcut = require('earcut');
+var ReticleRenderer = require('./reticle-renderer');
 
 // Constants for the active/inactive animation.
 var INACTIVE_COLOR = new THREE.Color(1, 1, 1);
@@ -49,6 +50,12 @@ function EditorRenderer(worldRenderer) {
     body.addEventListener('mousemove', this.onMouseMove_.bind(this), false);
     body.addEventListener('mouseup', this.onMouseUp_.bind(this), false);
   }
+  body.addEventListener('touchstart', this.onTouchStart_.bind(this), false);
+  body.addEventListener('touchend', this.onTouchEnd_.bind(this), false);
+
+
+  this.reticleRenderer = new ReticleRenderer(this.camera);
+  this.reticleVisible = false;
 
   // Add a placeholder for shapes.
   this.shapesRoot = new THREE.Object3D();
@@ -74,6 +81,9 @@ EditorRenderer.prototype.setEditorMode = function (bool) {
  * @param currentTime
  */
 EditorRenderer.prototype.update = function (currentTime) {
+  if (this.worldRenderer.isVRMode()) {
+    this.updateVR_();
+  }
 
   if (!currentTime) {
     currentTime = 0;
@@ -138,6 +148,39 @@ EditorRenderer.prototype.update = function (currentTime) {
   }
 
 };
+
+/**
+ * Check if VR pointer touches some shapes
+ * @private
+ */
+EditorRenderer.prototype.updateVR_ = function() {
+  this.pointer.set(0, 0);
+
+  // Go through all shapes to see if they are currently selected.
+  var intersectingShape = this.getIntersectingShapeOrHandles_();
+
+  if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true) {
+    this.focusedShape = intersectingShape;
+
+    if (!this.reticleVisible) {
+
+      this.reticleRenderer.setVisibility(true);
+      this.reticleVisible = true;
+
+    }
+
+  } else if(this.reticleVisible) {
+
+    this.reticleRenderer.setVisibility(false);
+    this.reticleVisible = false;
+    this.focusedShape = false;
+
+  } else {
+    this.focusedShape = false;
+  }
+
+};
+
 
 /**
  * Set shape vertices quaternion and returns:
@@ -279,7 +322,7 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
       this.blurShape_(this.selectedShape.name);
     }
 
-    this.deselectShape();
+    this.deselectShape(); 
   }
 
   // check if a shape has to be selected
@@ -296,10 +339,6 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
 
   if (this.editorMode) {
     this.isDragging = true;
-
-    if (this.selectedShape) {
-
-    }
 
     if (this.toolActive) {
       var pointOnSphere = this.getClickPositionOnSphere_();
@@ -390,6 +429,42 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
   else if (this.selectedShape && this.wasShapeTransformed) {
     this.emit('transformed', this.selectedShape);
     this.prevPointerPosition = null;
+  }
+};
+
+/**
+ *
+ * @param e
+ * @returns {boolean}
+ * @private
+ */
+EditorRenderer.prototype.onTouchStart_ = function(e) {
+  // In VR mode, don't touch the pointer position.
+  if (!this.worldRenderer.isVRMode()) {
+    this.updateTouch_(e);
+  }
+
+  // Force a camera update to see if any hotspots were selected.
+  this.update(this.worldRenderer.camera);
+
+  this.downShape = this.focusedShape;
+  return false;
+};
+
+/**
+ *
+ * @param e
+ * @private
+ */
+EditorRenderer.prototype.onTouchEnd_ = function(e) {
+  // If no hotspots are pressed, emit an empty click event.
+  if (!this.downShape) {
+    return;
+  }
+
+  if(this.downShape === this.focusedShape) {
+    this.selectShape(this.downShape);
+    e.preventDefault();
   }
 };
 
@@ -1024,6 +1099,18 @@ EditorRenderer.prototype.updateMouse_ = function (e) {
   var size = this.getSize_();
   this.pointer.x = (e.clientX / size.width) * 2 - 1;
   this.pointer.y = -(e.clientY / size.height) * 2 + 1;
+};
+
+/**
+ *
+ * @param e
+ * @private
+ */
+EditorRenderer.prototype.updateTouch_ = function(e) {
+  var size = this.getSize_();
+  var touch = e.touches[0];
+  this.pointer.x = (touch.clientX / size.width) * 2 - 1;
+  this.pointer.y = - (touch.clientY / size.height) * 2 + 1;
 };
 
 /**

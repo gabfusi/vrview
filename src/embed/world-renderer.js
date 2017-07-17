@@ -16,7 +16,6 @@ var AdaptivePlayer = require('./adaptive-player');
 var EventEmitter = require('eventemitter3');
 var Eyes = require('./eyes');
 var HotspotRenderer = require('./hotspot-renderer');
-//var ReticleRenderer = require('./reticle-renderer');
 var SphereRenderer = require('./sphere-renderer');
 var EditorRenderer = require('./editor-renderer');
 var TWEEN = require('tween.js');
@@ -48,7 +47,6 @@ function WorldRenderer() {
   this.hotspotRenderer = new HotspotRenderer(this);
   this.hotspotRenderer.on('focus', this.onHotspotFocus_.bind(this));
   this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
-  //this.reticleRenderer = new ReticleRenderer(this.camera);
   this.editorRenderer = new EditorRenderer(this);
   this.currentVideoTime = {currentTime: 0};
 
