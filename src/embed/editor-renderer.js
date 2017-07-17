@@ -42,9 +42,11 @@ function EditorRenderer(worldRenderer) {
   this.videoTime = 0;
   // pointerCursorActive
   this.pointerCursorActive = false;
+  // is a mobile device?
+  this.isMobile = Util.isMobile();
 
   var body = document.body;
-  if (!Util.isMobile()) {
+  if (!this.isMobile) {
     // Only enable mouse events on desktop.
     body.addEventListener('mousedown', this.onMouseDown_.bind(this), false);
     body.addEventListener('mousemove', this.onMouseMove_.bind(this), false);
@@ -81,7 +83,7 @@ EditorRenderer.prototype.setEditorMode = function (bool) {
  * @param currentTime
  */
 EditorRenderer.prototype.update = function (currentTime) {
-  if (this.worldRenderer.isVRMode()) {
+  if(this.isMobile) {
     this.updateVR_();
   }
 
@@ -154,7 +156,9 @@ EditorRenderer.prototype.update = function (currentTime) {
  * @private
  */
 EditorRenderer.prototype.updateVR_ = function() {
-  this.pointer.set(0, 0);
+  if (this.worldRenderer.isVRMode()) {
+    this.pointer.set(0, 0);
+  }
 
   // Go through all shapes to see if they are currently selected.
   var intersectingShape = this.getIntersectingShapeOrHandles_();
