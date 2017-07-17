@@ -217,7 +217,7 @@ Util.relativeToAbsolutePath = function(base, relative) {
  * @return {Boolean} True iff the specified path is an absolute path.
  */
 Util.isPathAbsolute = function(path) {
-  return ! /^(?:\/|[a-z]+:\/\/)/.test(path);
+  return ! /^(?:\/|[A-Z]:\\|[a-z]+:\/\/)/.test(path);
 }
 
 Util.isEmptyObject = function(obj) {
