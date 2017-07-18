@@ -1134,7 +1134,7 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
   if(!text) {
     // hide text
     if(this.helperTextObj) {
-      this.worldRenderer.camera.remove(this.helperTextObj);
+      this.shapesRoot.remove(this.helperTextObj);
     }
     return;
   }
@@ -1147,15 +1147,16 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
     antialias: true
   });
 
-  this.worldRenderer.camera.add(this.helperTextObj);
+  this.shapesRoot.add(this.helperTextObj);
   this.helperTextObj.position.z = -0.96;
   this.updateShapeTextPosition_();
+  window.helperText = this.helperTextObj;
 };
 
 EditorRenderer.prototype.updateShapeTextPosition_ = function () {
   if(this.helperTextObj) {
-    this.helperTextObj.position.x = 0; //this.pointer.x;
-    this.helperTextObj.position.y = 0; //this.pointer.y;
+    this.helperTextObj.position.x = this.pointer.x;
+    this.helperTextObj.position.y = this.pointer.y;
   }
 };
 
