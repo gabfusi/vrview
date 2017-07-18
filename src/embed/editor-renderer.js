@@ -1139,7 +1139,10 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
     return;
   }
 
+  console.log("setShapeText: ", text);
+
   this.helperTextObj = new Text2D(text, {
+    font: '30px Arial',
     fillStyle: '#000000',
     antialias: true
   });
