@@ -446,7 +446,7 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
       this.prevPointerPosition = null;
     }
 
-  } else if(this.downShape){
+  } else if(this.downShape && this.pointerCursorActive){
       this.selectShape(this.downShape);
   } else {
     this.downShape = null;
