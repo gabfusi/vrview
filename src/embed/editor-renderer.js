@@ -5,7 +5,7 @@ var TWEEN = require('tween.js');
 var Util = require('../util');
 var earcut = require('earcut');
 var ReticleRenderer = require('./reticle-renderer');
-var Text2D = require('three-text2d').Text2D;
+var MeshText2D = require('three-text2d').MeshText2D;
 
 // Constants for the active/inactive animation.
 var INACTIVE_COLOR = new THREE.Color(1, 1, 1);
@@ -1141,7 +1141,7 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
 
   console.log("setShapeText: ", text);
 
-  this.helperTextObj = new Text2D(text, {
+  this.helperTextObj = new MeshText2D(text, {
     font: '30px Arial',
     fillStyle: '#000000',
     antialias: true
