@@ -1148,6 +1148,7 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
   });
 
   this.scene.add(this.helperTextObj);
+  this.helperTextObj.position.z = -0.96;
   this.updateShapeTextPosition_();
 };
 
