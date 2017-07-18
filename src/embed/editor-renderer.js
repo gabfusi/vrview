@@ -1134,7 +1134,7 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
   if(!text) {
     // hide text
     if(this.helperTextObj) {
-      this.shapesRoot.remove(this.helperTextObj);
+      //this.shapesRoot.remove(this.helperTextObj);
     }
     return;
   }
@@ -1148,15 +1148,16 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
   });
 
   this.shapesRoot.add(this.helperTextObj);
-  this.helperTextObj.position.z = -0.96;
   this.updateShapeTextPosition_();
   window.helperText = this.helperTextObj;
 };
 
 EditorRenderer.prototype.updateShapeTextPosition_ = function () {
   if(this.helperTextObj) {
-    this.helperTextObj.position.x = this.pointer.x;
-    this.helperTextObj.position.y = this.pointer.y;
+    var point = this.getClickPositionOnSphere_();
+    this.helperTextObj.position.z = point.z;
+    this.helperTextObj.position.x = point.x;
+    this.helperTextObj.position.y = point.y;
   }
 };
 
