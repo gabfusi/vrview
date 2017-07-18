@@ -170,7 +170,7 @@ EditorRenderer.prototype.updateVR_ = function () {
 
       this.reticleRenderer.setVisibility(true);
       this.reticleVisible = true;
-      this.setShapeText_(intersectingShape.name);
+      //this.setShapeText_(intersectingShape.name);
       //this.emit("focus", intersectingShape.name);
 
     }
@@ -180,7 +180,7 @@ EditorRenderer.prototype.updateVR_ = function () {
     this.reticleRenderer.setVisibility(false);
     this.reticleVisible = false;
     this.focusedShape = false;
-    this.setShapeText_(false);
+    //this.setShapeText_(false);
     //this.emit("blur", intersectingShape.name);
 
   } else {
@@ -399,7 +399,7 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
       if (!this.pointerCursorActive) {
 
         this.pointerCursorActive = true;
-        this.setShapeText_(intersectingShape.name);
+        //this.setShapeText_(intersectingShape.name);
         //this.emit("focus", intersectingShape.name);
         requestAnimationFrame(function () {
           document.body.classList.add('action-pointer');
@@ -410,7 +410,7 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
     } else if (this.pointerCursorActive) {
 
       this.pointerCursorActive = false;
-      this.setShapeText_(false);
+      //this.setShapeText_(false);
       //this.emit("blur", intersectingShape.name);
       requestAnimationFrame(function () {
         document.body.classList.remove('action-pointer');
