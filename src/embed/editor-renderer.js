@@ -338,10 +338,12 @@ EditorRenderer.prototype.onMouseDown_ = function (e) {
   if (!this.selectedShape) {
     // if shape not already selected, select it
     if (intersectingShape) {
-      this.selectShape(intersectingShape);
 
       if (this.editorMode) {
+        this.selectShape(intersectingShape);
         this.focusShape_(intersectingShape.name);
+      } else {
+        this.downShape = intersectingShape;
       }
     }
   }
@@ -432,15 +434,25 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
 
   this.isDragging = false;
 
-  if (this.selectedShapeHandle && this.wasShapeHandleTransformed) {
-    this.emit('transformed', this.selectedShapeHandle.parent);
-    this.selectedShapeHandle = null;
+  if(this.editorMode) {
+
+    if (this.selectedShapeHandle && this.wasShapeHandleTransformed) {
+      this.emit('transformed', this.selectedShapeHandle.parent);
+      this.selectedShapeHandle = null;
+    }
+
+    else if (this.selectedShape && this.wasShapeTransformed) {
+      this.emit('transformed', this.selectedShape);
+      this.prevPointerPosition = null;
+    }
+
+  } else if(this.downShape){
+      this.selectShape(this.downShape);
+  } else {
+    this.downShape = null;
   }
 
-  else if (this.selectedShape && this.wasShapeTransformed) {
-    this.emit('transformed', this.selectedShape);
-    this.prevPointerPosition = null;
-  }
+
 };
 
 /**
