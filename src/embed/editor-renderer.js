@@ -1154,11 +1154,12 @@ EditorRenderer.prototype.setShapeText_ = function (text) {
   console.log("setShapeText: ", text);
 
   this.helperTextObj = new MeshText2D(text, {
-    font: '30px Arial',
-    fillStyle: '#000000',
+    font: '80px',
+    fillStyle: '#ffffff',
     antialias: true
   });
 
+  this.helperTextObj.lookAt(this.worldRenderer.camera);
   this.shapesRoot.add(this.helperTextObj);
   this.updateShapeTextPosition_();
   window.helperText = this.helperTextObj;
@@ -1172,7 +1173,6 @@ EditorRenderer.prototype.updateShapeTextPosition_ = function () {
     this.helperTextObj.position.y = point.y;
   }
 };
-
 
 /**
  * Get viewport size
