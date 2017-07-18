@@ -48,6 +48,8 @@ function WorldRenderer() {
   this.hotspotRenderer.on('focus', this.onHotspotFocus_.bind(this));
   this.hotspotRenderer.on('blur', this.onHotspotBlur_.bind(this));
   this.editorRenderer = new EditorRenderer(this);
+  this.editorRenderer.on('focus', this.onShapeFocus_.bind(this));
+  this.editorRenderer.on('blur', this.onShapeBlur_.bind(this));
   this.currentVideoTime = {currentTime: 0};
 
   // Get the VR Display as soon as we initialize.
@@ -334,6 +336,14 @@ WorldRenderer.prototype.onHotspotFocus_ = function (id) {
 WorldRenderer.prototype.onHotspotBlur_ = function (id) {
   // Reset the default cursor to be the default one.
   this.setCursor_('');
+};
+
+WorldRenderer.prototype.onShapeFocus_ = function (name) {
+  this.emit('shapefocus', name);
+};
+
+WorldRenderer.prototype.onShapeBlur_ = function (name) {
+  this.emit('shapeblur', name);
 };
 
 WorldRenderer.prototype.setCursor_ = function (cursor) {

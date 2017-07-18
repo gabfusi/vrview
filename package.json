@@ -10,6 +10,7 @@
     "shaka-player": "^2.0.0",
     "stats-js": "^1.0.0-alpha1",
     "three": "^0.84.0",
+    "three-text2d": "^0.3.4",
     "tween.js": "^16.3.5",
     "urijs": "^1.18.2",
     "webvr-boilerplate": "^0.4.6",

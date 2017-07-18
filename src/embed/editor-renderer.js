@@ -5,6 +5,7 @@ var TWEEN = require('tween.js');
 var Util = require('../util');
 var earcut = require('earcut');
 var ReticleRenderer = require('./reticle-renderer');
+var Text2D = require('three-text2d').Text2D;
 
 // Constants for the active/inactive animation.
 var INACTIVE_COLOR = new THREE.Color(1, 1, 1);
@@ -83,10 +84,9 @@ EditorRenderer.prototype.setEditorMode = function (bool) {
  * @param currentTime
  */
 EditorRenderer.prototype.update = function (currentTime) {
-  if(this.isMobile) {
+  if (this.isMobile) {
     this.updateVR_();
   }
-
   if (!currentTime) {
     currentTime = 0;
   }
@@ -155,7 +155,7 @@ EditorRenderer.prototype.update = function (currentTime) {
  * Check if VR pointer touches some shapes
  * @private
  */
-EditorRenderer.prototype.updateVR_ = function() {
+EditorRenderer.prototype.updateVR_ = function () {
   if (this.worldRenderer.isVRMode()) {
     this.pointer.set(0, 0);
   }
@@ -163,23 +163,27 @@ EditorRenderer.prototype.updateVR_ = function() {
   // Go through all shapes to see if they are currently selected.
   var intersectingShape = this.getIntersectingShapeOrHandles_();
 
-  if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true) {
+  if (intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true) {
     this.focusedShape = intersectingShape;
 
     if (!this.reticleVisible) {
 
       this.reticleRenderer.setVisibility(true);
       this.reticleVisible = true;
+      this.setShapeText_(intersectingShape.name);
+      //this.emit("focus", intersectingShape.name);
 
     }
 
-  } else if(this.reticleVisible) {
+  } else if (this.reticleVisible) {
 
     this.reticleRenderer.setVisibility(false);
     this.reticleVisible = false;
     this.focusedShape = false;
+    this.setShapeText_(false);
+    //this.emit("blur", intersectingShape.name);
 
-  } else {
+  } else {
     this.focusedShape = false;
   }
 
@@ -284,6 +288,7 @@ EditorRenderer.prototype.isDrawing = function () {
 EditorRenderer.prototype.startDraw = function () {
   this.toolActive = true;
 };
+
 /**
  * Deactivate draw shape tool
  */
@@ -389,24 +394,26 @@ EditorRenderer.prototype.onMouseMove_ = function (e) {
     this.updateMouse_(e);
     var intersectingShape = this.getIntersectingShapeOrHandles_();
 
-    if(intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true) {
+    if (intersectingShape && intersectingShape.name !== 'handle' && intersectingShape.visible === true) {
 
       if (!this.pointerCursorActive) {
 
         this.pointerCursorActive = true;
+        this.setShapeText_(intersectingShape.name);
+        //this.emit("focus", intersectingShape.name);
         requestAnimationFrame(function () {
           document.body.classList.add('action-pointer');
-          console.info('added class! ', document.body.classList)
         });
 
       }
 
-    } else if(this.pointerCursorActive) {
+    } else if (this.pointerCursorActive) {
 
       this.pointerCursorActive = false;
+      this.setShapeText_(false);
+      //this.emit("blur", intersectingShape.name);
       requestAnimationFrame(function () {
         document.body.classList.remove('action-pointer');
-        console.info('removed class! ', document.body.classList)
       });
     }
   }
@@ -442,7 +449,7 @@ EditorRenderer.prototype.onMouseUp_ = function (e) {
  * @returns {boolean}
  * @private
  */
-EditorRenderer.prototype.onTouchStart_ = function(e) {
+EditorRenderer.prototype.onTouchStart_ = function (e) {
   // In VR mode, don't touch the pointer position.
   if (!this.worldRenderer.isVRMode()) {
     this.updateTouch_(e);
@@ -460,13 +467,13 @@ EditorRenderer.prototype.onTouchStart_ = function(e) {
  * @param e
  * @private
  */
-EditorRenderer.prototype.onTouchEnd_ = function(e) {
+EditorRenderer.prototype.onTouchEnd_ = function (e) {
   // If no hotspots are pressed, emit an empty click event.
   if (!this.downShape) {
     return;
   }
 
-  if(this.downShape === this.focusedShape) {
+  if (this.downShape === this.focusedShape) {
     this.selectShape(this.downShape);
     e.preventDefault();
   }
@@ -480,6 +487,7 @@ EditorRenderer.prototype.selectShape = function (shape) {
   this.selectedShape = shape;
   this.emit('shapeselected', this.selectedShape);
 };
+
 /**
  * Deselect current shape
  */
@@ -1110,12 +1118,43 @@ EditorRenderer.prototype.updateMouse_ = function (e) {
  * @param e
  * @private
  */
-EditorRenderer.prototype.updateTouch_ = function(e) {
+EditorRenderer.prototype.updateTouch_ = function (e) {
   var size = this.getSize_();
   var touch = e.touches[0];
   this.pointer.x = (touch.clientX / size.width) * 2 - 1;
-  this.pointer.y = - (touch.clientY / size.height) * 2 + 1;
+  this.pointer.y = -(touch.clientY / size.height) * 2 + 1;
 };
+
+/**
+ *
+ * @param text
+ */
+EditorRenderer.prototype.setShapeText_ = function (text) {
+
+  if(!text) {
+    // hide text
+    if(this.helperTextObj) {
+      this.scene.remove(this.helperTextObj);
+    }
+    return;
+  }
+
+  this.helperTextObj = new Text2D(text, {
+    fillStyle: '#000000',
+    antialias: true
+  });
+
+  this.scene.add(this.helperTextObj);
+  this.updateShapeTextPosition_();
+};
+
+EditorRenderer.prototype.updateShapeTextPosition_ = function () {
+  if(this.helperTextObj) {
+    this.helperTextObj.position.x = this.pointer.x;
+    this.helperTextObj.position.y = this.pointer.y;
+  }
+};
+
 
 /**
  * Get viewport size
